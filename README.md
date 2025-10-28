@@ -1,1 +1,2 @@
-# MediVoice-AI-
+# MediVoice-AI
+The MediVoice AI project automates inbound and outbound voice interactions through intelligent conversational bots. It addresses the current challenge of relying on nearly 60 telemarketing staff, which is costly, labor-intensive, and difficult to scale as demand grows. By using AI-driven voice technology, the system can handle high call volumes, provide personalized interactions, and maintain consistent service quality. This reduces operational costs, frees human agents for higher-value tasks, and ensures the business can scale without compromising customer engagement. Ultimately, MediVoice AI enables more efficient, responsive, and scalable sales and support operations.
