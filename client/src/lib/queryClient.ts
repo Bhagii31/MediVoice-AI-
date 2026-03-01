@@ -41,14 +41,26 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+const defaultQueryFn = async ({ queryKey }: { queryKey: readonly unknown[] }) => {
+  const [url, params] = queryKey as [string, Record<string, string>?];
+  let fullUrl = url;
+  if (params && Object.keys(params).length > 0) {
+    const qs = new URLSearchParams(params).toString();
+    fullUrl = `${url}?${qs}`;
+  }
+  const res = await fetch(fullUrl, { credentials: "include" });
+  await throwIfResNotOk(res);
+  return await res.json();
+};
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: defaultQueryFn,
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 30_000,
+      retry: 1,
     },
     mutations: {
       retry: false,
