@@ -69,21 +69,39 @@ export async function registerRoutes(
   // ─── DASHBOARD STATS ───────────────────────────────────────────────
   app.get("/api/stats", async (req, res) => {
     if (!isMongoConnected()) {
-      return res.json({ pharmacies: 0, dealers: 0, conversations: 0, pendingOrders: 0, lowStock: 0, recentCalls: [] });
+      return res.json({ pharmacies: 0, dealers: 0, conversations: 0, pendingOrders: 0, lowStock: 0, offers: 0, recentCalls: [], ordersByStatus: {}, inventoryByStatus: {}, topPharmacies: [] });
     }
     try {
-      const [pharmacies, dealers, conversations, pendingOrders] = await Promise.all([
+      const [pharmacies, dealers, conversations, pendingOrders, offers] = await Promise.all([
         Pharmacy.countDocuments({}),
         Dealer.countDocuments({}),
         Conversation.countDocuments({}),
         StockRequest.countDocuments({ status: "Pending" }),
+        Offer.countDocuments({ status: "Active" }),
       ]);
       const lowStock = await Inventory.countDocuments({ status: { $in: ["low_stock", "out_of_stock"] } });
-      const recentCalls = await Conversation.find({})
-        .sort({ timestamp: -1 })
-        .limit(5)
-        .lean();
-      res.json({ pharmacies, dealers, conversations, pendingOrders, lowStock, recentCalls });
+
+      const [recentCalls, orderStatusAgg, inventoryStatusAgg, pharmacyCallAgg] = await Promise.all([
+        Conversation.find({}).sort({ timestamp: -1 }).limit(5).lean(),
+        StockRequest.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+        Inventory.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+        Conversation.aggregate([
+          { $group: { _id: "$pharmacy_name", count: { $sum: 1 } } },
+          { $match: { _id: { $ne: null } } },
+          { $sort: { count: -1 } },
+          { $limit: 6 },
+        ]),
+      ]);
+
+      const ordersByStatus: Record<string, number> = {};
+      for (const r of orderStatusAgg) if (r._id) ordersByStatus[r._id] = r.count;
+
+      const inventoryByStatus: Record<string, number> = {};
+      for (const r of inventoryStatusAgg) if (r._id) inventoryByStatus[r._id] = r.count;
+
+      const topPharmacies = pharmacyCallAgg.map((r: any) => ({ name: r._id, count: r.count }));
+
+      res.json({ pharmacies, dealers, conversations, pendingOrders, lowStock, offers, recentCalls, ordersByStatus, inventoryByStatus, topPharmacies });
     } catch (err) {
       console.error("Stats error:", err);
       res.status(500).json({ error: "Failed to fetch stats" });
@@ -270,9 +288,10 @@ export async function registerRoutes(
   app.get("/api/conversations", async (req, res) => {
     if (!isMongoConnected()) return res.json({ conversations: [], total: 0, page: 1, totalPages: 0 });
     try {
-      const { pharmacy, page = 1, limit = 20 } = req.query;
+      const { pharmacy, type, page = 1, limit = 20 } = req.query;
       const filter: any = {};
       if (pharmacy) filter.pharmacy_name = { $regex: pharmacy, $options: "i" };
+      if (type && type !== "all") filter.type = type;
       const skip = (Number(page) - 1) * Number(limit);
       const [conversations, total] = await Promise.all([
         Conversation.find(filter)

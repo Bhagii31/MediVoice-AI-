@@ -2,9 +2,17 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { MessageSquare, Search, ArrowRight, Mic, ChevronLeft, ChevronRight, Phone } from "lucide-react";
+import { MessageSquare, Search, ArrowRight, Mic, ChevronLeft, ChevronRight, Phone, Download, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { conversationsToCSV } from "@/lib/csv";
+
+const TYPE_FILTERS = [
+  { value: "all", label: "All Calls" },
+  { value: "inbound", label: "Inbound" },
+  { value: "outbound", label: "Outbound" },
+];
 
 function ConversationCard({ convo, index }: { convo: any; index: number }) {
   const date = convo.timestamp ? new Date(convo.timestamp) : null;
@@ -47,12 +55,14 @@ function ConversationCard({ convo, index }: { convo: any; index: number }) {
 export default function Conversations() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState("all");
 
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/conversations", search, page],
+    queryKey: ["/api/conversations", search, page, typeFilter],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (search) params.set("pharmacy", search);
+      if (typeFilter !== "all") params.set("type", typeFilter);
       const res = await fetch(`/api/conversations?${params}`);
       return res.json();
     }
@@ -62,22 +72,47 @@ export default function Conversations() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="animate-fade-in-down">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="h-2 w-2 rounded-full bg-violet-500" />
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Call Logs</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-2 w-2 rounded-full bg-violet-500" />
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Call Logs</span>
+          </div>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Conversations</h1>
+          <p className="text-muted-foreground text-sm">AI voice call recordings from pharmacies — stored in MongoDB Atlas</p>
         </div>
-        <h1 className="text-2xl font-bold" data-testid="text-page-title">Conversations</h1>
-        <p className="text-muted-foreground text-sm">AI voice call recordings from pharmacies — stored in MongoDB Atlas</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
+          onClick={() => conversationsToCSV(conversations)}
+          disabled={!conversations.length}
+          data-testid="button-download-conversations-csv"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
 
-      {!isLoading && data?.total > 0 && (
-        <div className="flex items-center gap-3 flex-wrap animate-fade-in">
+      <div className="flex items-center gap-3 flex-wrap animate-fade-in">
+        {!isLoading && data?.total > 0 && (
           <div className="flex items-center gap-2 text-xs bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 px-3 py-1.5 rounded-full border border-violet-200 dark:border-violet-900/60">
             <Phone className="h-3 w-3" />{data.total} total calls
           </div>
+        )}
+        <div className="flex items-center gap-1.5 border border-border rounded-lg overflow-hidden">
+          {TYPE_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => { setTypeFilter(f.value); setPage(1); }}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${typeFilter === f.value ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+              data-testid={`button-filter-${f.value}`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       <div className="relative max-w-sm animate-fade-in">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -102,6 +137,7 @@ export default function Conversations() {
             </div>
             <p className="text-muted-foreground font-medium">No conversations found.</p>
             {search && <p className="text-xs text-muted-foreground mt-1">Try a different pharmacy name.</p>}
+            {typeFilter !== "all" && <p className="text-xs text-muted-foreground mt-1">No {typeFilter} calls recorded yet.</p>}
           </CardContent>
         </Card>
       ) : (

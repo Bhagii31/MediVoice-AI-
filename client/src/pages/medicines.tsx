@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Pill, Plus, Search, Package, Calendar, Percent, TrendingDown } from "lucide-react";
+import { Pill, Plus, Search, Package, Calendar, Percent, TrendingDown, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { medicinesToCSV } from "@/lib/csv";
 
 function ExpiryStatus({ date }: { date: string }) {
   const expiryDate = new Date(date);
@@ -178,7 +179,20 @@ export default function Medicines() {
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Medicine Catalogue</h1>
           <p className="text-muted-foreground text-sm">Dealer warehouse — all medicines with real-time stock levels</p>
         </div>
-        <AddMedicineDialog />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
+            onClick={() => medicinesToCSV(medicines)}
+            disabled={!medicines.length}
+            data-testid="button-download-medicines-csv"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <AddMedicineDialog />
+        </div>
       </div>
 
       {!isLoading && medicines.length > 0 && (

@@ -52,3 +52,29 @@ export function inventoryToCSV(items: any[]) {
   }));
   toCSV(rows, `inventory_${new Date().toISOString().slice(0, 10)}.csv`);
 }
+
+export function medicinesToCSV(medicines: any[]) {
+  const rows = medicines.map(m => ({
+    "Name": m.name || "",
+    "Manufacturer": m.manufacturer || "",
+    "Category": m.category || "",
+    "Price per Unit ($)": m.price_per_unit ?? "",
+    "Stock Quantity": m.stock_quantity ?? "",
+    "Discount (%)": m.discount ?? "",
+    "Expiry Date": m.expiry_date || "",
+    "Description": m.description || "",
+  }));
+  toCSV(rows, `medicines_${new Date().toISOString().slice(0, 10)}.csv`);
+}
+
+export function conversationsToCSV(conversations: any[]) {
+  const rows = conversations.map(c => ({
+    "Pharmacy": c.pharmacy_name || "",
+    "Type": c.type || "",
+    "Pharmacist Text": c.pharmacist_text || "",
+    "AI Response": c.ai_response || "",
+    "Date": c.timestamp ? new Date(c.timestamp).toLocaleString() : "",
+    "Conversation ID": c._id || "",
+  }));
+  toCSV(rows, `call_logs_${new Date().toISOString().slice(0, 10)}.csv`);
+}

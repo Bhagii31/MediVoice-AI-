@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Building2, MessageSquare, AlertTriangle, ClipboardList, Pill, Tag, Phone, TrendingUp, ChevronRight, Activity, Zap } from "lucide-react";
+import { Building2, MessageSquare, AlertTriangle, ClipboardList, Pill, Tag, Phone, TrendingUp, ChevronRight, Activity, Zap, BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
+} from "recharts";
 
 function useCountUp(target: number | undefined, duration = 1200) {
   const [value, setValue] = useState(0);
@@ -54,6 +57,25 @@ function StatCard({ title, target, icon: Icon, gradient, href, delay = 0 }: {
   return href ? <Link href={href}>{content}</Link> : content;
 }
 
+const ORDER_COLORS: Record<string, string> = {
+  Pending: "#f59e0b",
+  Processing: "#3b82f6",
+  Delivered: "#10b981",
+  Cancelled: "#ef4444",
+};
+
+const INVENTORY_COLORS: Record<string, string> = {
+  in_stock: "#10b981",
+  low_stock: "#f59e0b",
+  out_of_stock: "#ef4444",
+};
+
+const INVENTORY_LABELS: Record<string, string> = {
+  in_stock: "In Stock",
+  low_stock: "Low Stock",
+  out_of_stock: "Out of Stock",
+};
+
 const QUICK_ACTIONS = [
   { label: "View all pharmacies", href: "/dealer/pharmacies", icon: Building2, color: "text-purple-500" },
   { label: "Manage medicine catalogue", href: "/dealer/medicines", icon: Pill, color: "text-green-500" },
@@ -70,8 +92,42 @@ const OUTBOUND_STEPS = [
   "Order & conversation stored automatically",
 ];
 
+function CustomPieTooltip({ active, payload }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
+        <p className="font-semibold">{payload[0].name}</p>
+        <p className="text-muted-foreground">{payload[0].value} records</p>
+      </div>
+    );
+  }
+  return null;
+}
+
+function CustomBarTooltip({ active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-xs max-w-[180px]">
+        <p className="font-semibold truncate">{label}</p>
+        <p className="text-violet-500">{payload[0].value} calls</p>
+      </div>
+    );
+  }
+  return null;
+}
+
 export default function DealerDashboard() {
   const { data: stats, isLoading } = useQuery<any>({ queryKey: ["/api/stats"] });
+
+  const orderChartData = stats?.ordersByStatus
+    ? Object.entries(stats.ordersByStatus).map(([name, value]) => ({ name, value }))
+    : [];
+
+  const inventoryChartData = stats?.inventoryByStatus
+    ? Object.entries(stats.inventoryByStatus).map(([key, value]) => ({ name: INVENTORY_LABELS[key] || key, value, key }))
+    : [];
+
+  const topPharmacies = stats?.topPharmacies || [];
 
   return (
     <div className="p-6 space-y-7">
@@ -89,6 +145,110 @@ export default function DealerDashboard() {
         <StatCard title="Pending Orders" target={stats?.pendingOrders} icon={ClipboardList} gradient="bg-gradient-to-br from-orange-500 to-red-500" href="/dealer/orders" delay={80} />
         <StatCard title="Total AI Calls" target={stats?.conversations} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" href="/dealer/conversations" delay={160} />
         <StatCard title="Low Stock Alerts" target={stats?.lowStock} icon={AlertTriangle} gradient="bg-gradient-to-br from-amber-500 to-orange-500" href="/dealer/inventory" delay={240} />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-5 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-orange-500" /> Order Pipeline
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Distribution by current status</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {isLoading || !orderChartData.length ? (
+              <div className="h-40 flex items-center justify-center text-xs text-muted-foreground">
+                {isLoading ? <Skeleton className="h-32 w-32 rounded-full" /> : "No order data yet"}
+              </div>
+            ) : (
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={orderChartData} cx="50%" cy="50%" innerRadius={38} outerRadius={62} paddingAngle={3} dataKey="value">
+                      {orderChartData.map((entry: any) => (
+                        <Cell key={entry.name} fill={ORDER_COLORS[entry.name] || "#8b5cf6"} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomPieTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+              {orderChartData.map((entry: any) => (
+                <div key={entry.name} className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: ORDER_COLORS[entry.name] || "#8b5cf6" }} />
+                  {entry.name} ({entry.value})
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> Inventory Health
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Stock status breakdown</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {isLoading || !inventoryChartData.length ? (
+              <div className="h-40 flex items-center justify-center text-xs text-muted-foreground">
+                {isLoading ? <Skeleton className="h-32 w-32 rounded-full" /> : "No inventory data yet"}
+              </div>
+            ) : (
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={inventoryChartData} cx="50%" cy="50%" innerRadius={38} outerRadius={62} paddingAngle={3} dataKey="value">
+                      {inventoryChartData.map((entry: any) => (
+                        <Cell key={entry.key} fill={INVENTORY_COLORS[entry.key] || "#6366f1"} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomPieTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+              {inventoryChartData.map((entry: any) => (
+                <div key={entry.key} className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: INVENTORY_COLORS[entry.key] || "#6366f1" }} />
+                  {entry.name} ({entry.value as number})
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-violet-500" /> Top Pharmacies
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">By AI call volume</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {isLoading || !topPharmacies.length ? (
+              <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">
+                {isLoading ? <Skeleton className="h-36 w-full rounded-lg" /> : "No call data yet"}
+              </div>
+            ) : (
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topPharmacies} layout="vertical" margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={70} />
+                    <Tooltip content={<CustomBarTooltip />} />
+                    <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
