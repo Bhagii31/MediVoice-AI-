@@ -6,27 +6,51 @@ import {
   SidebarMenuItem, SidebarFooter,
 } from "@/components/ui/sidebar";
 import { usePharmacyContext } from "@/lib/pharmacy-context";
+import { useQuery } from "@tanstack/react-query";
 
-const navItems = [
-  { label: "Overview", items: [
-    { title: "Dashboard", url: "/pharmacy", icon: LayoutDashboard, exact: true },
-  ]},
-  { label: "Orders & Finance", items: [
-    { title: "My Orders", url: "/pharmacy/orders", icon: ClipboardList },
-    { title: "Invoices", url: "/pharmacy/invoices", icon: FileText },
-  ]},
-  { label: "Medicines", items: [
-    { title: "Browse Catalogue", url: "/pharmacy/catalogue", icon: Pill },
-  ]},
-  { label: "MediVoice AI", items: [
-    { title: "Call Bot", url: "/pharmacy/voice", icon: Phone, highlight: true },
-    { title: "Call History", url: "/pharmacy/conversations", icon: MessageSquare },
-  ]},
-];
+function LiveBadge({ count, color = "bg-emerald-500" }: { count?: number; color?: string }) {
+  if (!count) return null;
+  return (
+    <span className={`ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full ${color} text-white text-[10px] font-bold animate-scale-in leading-none`}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 export function PharmacistSidebar() {
   const [location] = useLocation();
-  const { pharmacyName, clearPharmacy } = usePharmacyContext();
+  const { pharmacyName, pharmacyCode, clearPharmacy } = usePharmacyContext();
+
+  const { data: orders = [] } = useQuery<any[]>({
+    queryKey: ["/api/stock-requests", pharmacyCode],
+    queryFn: async () => {
+      const params = pharmacyCode ? `?pharmacist_id=${encodeURIComponent(pharmacyCode)}` : "";
+      const res = await fetch(`/api/stock-requests${params}`);
+      return res.json();
+    },
+    enabled: !!pharmacyCode,
+    refetchInterval: 30000,
+  });
+
+  const pendingOrders = orders.filter((o: any) => o.status === "Pending" || o.status === "Processing").length;
+  const unpaidInvoices = orders.filter((o: any) => o.payment_status === "Unpaid" || o.payment_status === "Pending").length;
+
+  const navItems = [
+    { label: "Overview", items: [
+      { title: "Dashboard", url: "/pharmacy", icon: LayoutDashboard, exact: true },
+    ]},
+    { label: "Orders & Finance", items: [
+      { title: "My Orders", url: "/pharmacy/orders", icon: ClipboardList, badge: pendingOrders, badgeColor: "bg-orange-500" },
+      { title: "Invoices", url: "/pharmacy/invoices", icon: FileText, badge: unpaidInvoices, badgeColor: "bg-amber-500" },
+    ]},
+    { label: "Medicines", items: [
+      { title: "Browse Catalogue", url: "/pharmacy/catalogue", icon: Pill },
+    ]},
+    { label: "MediVoice AI", items: [
+      { title: "Call Bot", url: "/pharmacy/voice", icon: Phone, highlight: true },
+      { title: "Call History", url: "/pharmacy/conversations", icon: MessageSquare },
+    ]},
+  ];
 
   return (
     <Sidebar>
@@ -53,6 +77,14 @@ export function PharmacistSidebar() {
           >
             <ChevronRight className="h-3 w-3" /> Switch pharmacy
           </button>
+        )}
+        {pendingOrders > 0 && (
+          <Link href="/pharmacy/orders">
+            <div className="mt-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors animate-fade-in-up">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-blink flex-shrink-0" />
+              <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">{pendingOrders} order{pendingOrders > 1 ? "s" : ""} in progress</p>
+            </div>
+          </Link>
         )}
       </SidebarHeader>
 
@@ -94,16 +126,17 @@ export function PharmacistSidebar() {
                               "text-muted-foreground"
                             }`} />
                           </div>
-                          <span className={`font-medium ${
+                          <span className={`font-medium flex-1 ${
                             isActive ? "text-emerald-700 dark:text-emerald-300" :
                             isHighlight ? "text-emerald-600 dark:text-emerald-400 font-semibold" : ""
                           }`}>{item.title}</span>
                           {isHighlight && !isActive && (
-                            <div className="ml-auto flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-blink" />
-                            </div>
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-blink" />
                           )}
-                          {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500 animate-blink" />}
+                          {isActive
+                            ? <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-blink" />
+                            : <LiveBadge count={item.badge} color={item.badgeColor} />
+                          }
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

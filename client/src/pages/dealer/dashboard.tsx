@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Building2, MessageSquare, AlertTriangle, ClipboardList, Pill, Tag, Phone, TrendingUp, ChevronRight, Activity, Zap, BarChart3 } from "lucide-react";
+import { Building2, MessageSquare, AlertTriangle, ClipboardList, Pill, Tag, Phone, ChevronRight, Activity, Zap, BarChart3, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip
 } from "recharts";
 
 function useCountUp(target: number | undefined, duration = 1200) {
@@ -68,12 +68,14 @@ const INVENTORY_COLORS: Record<string, string> = {
   in_stock: "#10b981",
   low_stock: "#f59e0b",
   out_of_stock: "#ef4444",
+  critical: "#dc2626",
 };
 
 const INVENTORY_LABELS: Record<string, string> = {
   in_stock: "In Stock",
   low_stock: "Low Stock",
   out_of_stock: "Out of Stock",
+  critical: "Critical",
 };
 
 const QUICK_ACTIONS = [
@@ -116,8 +118,49 @@ function CustomBarTooltip({ active, payload, label }: any) {
   return null;
 }
 
+function LiveRefreshIndicator({ interval = 30 }: { interval?: number }) {
+  const [countdown, setCountdown] = useState(interval);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) {
+          queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+          return interval;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [interval, queryClient]);
+
+  const pct = ((interval - countdown) / interval) * 100;
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="relative h-5 w-5">
+        <svg className="h-5 w-5 -rotate-90" viewBox="0 0 20 20">
+          <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2" />
+          <circle cx="10" cy="10" r="8" fill="none" stroke="hsl(var(--primary))" strokeWidth="2"
+            strokeDasharray={`${2 * Math.PI * 8}`}
+            strokeDashoffset={`${2 * Math.PI * 8 * (1 - pct / 100)}`}
+            className="transition-all duration-1000" />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <RefreshCw className="h-2.5 w-2.5 text-primary" />
+        </div>
+      </div>
+      <span>Auto-refresh in {countdown}s</span>
+    </div>
+  );
+}
+
 export default function DealerDashboard() {
-  const { data: stats, isLoading } = useQuery<any>({ queryKey: ["/api/stats"] });
+  const { data: stats, isLoading } = useQuery<any>({
+    queryKey: ["/api/stats"],
+    refetchInterval: 30000,
+  });
 
   const orderChartData = stats?.ordersByStatus
     ? Object.entries(stats.ordersByStatus).map(([name, value]) => ({ name, value }))
@@ -131,13 +174,20 @@ export default function DealerDashboard() {
 
   return (
     <div className="p-6 space-y-7">
-      <div className="animate-fade-in-down">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="h-2 w-2 rounded-full bg-purple-500 animate-blink" />
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Dealer Portal</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-2 w-2 rounded-full bg-purple-500 animate-blink" />
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Dealer Portal</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-blink" />
+              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Live</span>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight" data-testid="text-page-title">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Your medicine distribution overview — live data from MongoDB Atlas</p>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight" data-testid="text-page-title">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Your medicine distribution overview — live data from MongoDB Atlas</p>
+        <LiveRefreshIndicator interval={30} />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
