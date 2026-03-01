@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ClipboardList, User, Calendar, CreditCard, Package, ChevronRight, TrendingUp } from "lucide-react";
+import { ClipboardList, User, Calendar, CreditCard, Package, ChevronRight, TrendingUp, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ordersToCSV } from "@/lib/csv";
 
 const STATUS_CONFIG: Record<string, { bg: string; dot: string; textColor: string }> = {
   Pending:    { bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400", dot: "bg-amber-500", textColor: "text-amber-700 dark:text-amber-400" },
@@ -143,14 +144,27 @@ export default function StockRequests() {
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Orders</h1>
           <p className="text-muted-foreground text-sm">Medicine orders from pharmacies — advance through the pipeline below</p>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40" data-testid="select-status-filter">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            {FILTERS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40" data-testid="select-status-filter">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              {FILTERS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
+            onClick={() => ordersToCSV(requests)}
+            disabled={!requests.length}
+            data-testid="button-download-orders-csv"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {!isLoading && requests.length > 0 && (

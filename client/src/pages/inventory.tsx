@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Package, Plus, Search, AlertTriangle, MapPin, RefreshCw, Warehouse } from "lucide-react";
+import { Package, Plus, Search, AlertTriangle, MapPin, RefreshCw, Warehouse, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { inventoryToCSV } from "@/lib/csv";
 
 const STOCK_CONFIG = {
   in_stock:    { label: "In Stock", bg: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500", bar: "bg-emerald-500" },
@@ -145,7 +146,20 @@ export default function Inventory() {
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Warehouse Inventory</h1>
           <p className="text-muted-foreground text-sm">Real-time medicine stock levels across dealer warehouses</p>
         </div>
-        <AddInventoryDialog />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
+            onClick={() => inventoryToCSV(allInventory)}
+            disabled={!allInventory.length}
+            data-testid="button-download-inventory-csv"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <AddInventoryDialog />
+        </div>
       </div>
 
       {!isLoading && allInventory.length > 0 && (
