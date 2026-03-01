@@ -174,24 +174,33 @@ export default function Medicines() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Medicine Catalogue</h1>
-          <p className="text-muted-foreground text-sm">Dealer warehouse — all medicines with real-time stock levels</p>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl animate-fade-in-down" style={{background: "linear-gradient(135deg, #0891b2 0%, #059669 50%, #7c3aed 100%)"}}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
-            onClick={() => medicinesToCSV(medicines)}
-            disabled={!medicines.length}
-            data-testid="button-download-medicines-csv"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-          <AddMedicineDialog />
+        <div className="relative z-10 p-6 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-cyan-200 font-semibold uppercase tracking-wider">Product Catalogue</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Medicine Catalogue</h1>
+            <p className="text-cyan-100 text-sm mt-1">Dealer warehouse — all medicines with real-time stock levels</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20"
+              onClick={() => medicinesToCSV(medicines)}
+              disabled={!medicines.length}
+              data-testid="button-download-medicines-csv"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <AddMedicineDialog />
+          </div>
         </div>
       </div>
 

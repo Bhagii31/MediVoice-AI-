@@ -141,24 +141,33 @@ export default function Inventory() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Warehouse Inventory</h1>
-          <p className="text-muted-foreground text-sm">Real-time medicine stock levels across dealer warehouses</p>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl animate-fade-in-down" style={{background: "linear-gradient(135deg, #d97706 0%, #059669 60%, #0891b2 100%)"}}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
-            onClick={() => inventoryToCSV(allInventory)}
-            disabled={!allInventory.length}
-            data-testid="button-download-inventory-csv"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-          <AddInventoryDialog />
+        <div className="relative z-10 p-6 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-amber-200 font-semibold uppercase tracking-wider">Warehouse</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Warehouse Inventory</h1>
+            <p className="text-amber-100 text-sm mt-1">Real-time medicine stock levels across dealer warehouses</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20"
+              onClick={() => inventoryToCSV(allInventory)}
+              disabled={!allInventory.length}
+              data-testid="button-download-inventory-csv"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <AddInventoryDialog />
+          </div>
         </div>
       </div>
 

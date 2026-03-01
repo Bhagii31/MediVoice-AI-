@@ -139,31 +139,40 @@ export default function StockRequests() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Orders</h1>
-          <p className="text-muted-foreground text-sm">Medicine orders from pharmacies — advance through the pipeline below</p>
+      <div className="relative rounded-2xl overflow-hidden hero-orange p-6 shadow-xl animate-fade-in-down">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40" data-testid="select-status-filter">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              {FILTERS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
-            onClick={() => ordersToCSV(requests)}
+        <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-orange-200 font-semibold uppercase tracking-wider">Order Management</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Orders</h1>
+            <p className="text-orange-200 text-sm mt-1">Medicine orders from pharmacies — advance through the pipeline below</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40 bg-white/10 border-white/30 text-white" data-testid="select-status-filter">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                {FILTERS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20"
+              onClick={() => ordersToCSV(requests)}
             disabled={!requests.length}
             data-testid="button-download-orders-csv"
           >
             <Download className="h-4 w-4" />
             Export CSV
           </Button>
+        </div>
         </div>
       </div>
 

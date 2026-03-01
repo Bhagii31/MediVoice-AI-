@@ -82,18 +82,22 @@ export default function PharmacyDashboard() {
 
   return (
     <div className="p-6 space-y-7">
-      <div className="animate-fade-in-down">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-blink" />
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Pharmacist Portal</span>
+      <div className="relative rounded-2xl overflow-hidden hero-pharmacy p-6 shadow-xl animate-fade-in-down">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/4" />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md">
-            <Building2 className="h-5 w-5 text-white" />
-          </div>
+        <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{pharmacyName || "Dashboard"}</h1>
-            <p className="text-muted-foreground text-sm">Your pharmacy intelligence hub</p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-blink" />
+              <span className="text-xs text-emerald-200 font-semibold uppercase tracking-wider">Pharmacist Portal</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">{pharmacyName || "Dashboard"}</h1>
+            <p className="text-emerald-200 text-sm mt-1">Your pharmacy intelligence hub — MediVoice AI</p>
+          </div>
+          <div className="h-16 w-16 rounded-2xl bg-white/20 flex items-center justify-center shadow-md flex-shrink-0">
+            <Building2 className="h-8 w-8 text-white" />
           </div>
         </div>
       </div>

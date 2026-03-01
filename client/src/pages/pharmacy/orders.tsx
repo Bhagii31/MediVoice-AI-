@@ -180,27 +180,39 @@ export default function PharmacyOrders() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="animate-fade-in-down">
-        <h1 className="text-2xl font-bold" data-testid="text-page-title">My Orders</h1>
-        <p className="text-muted-foreground text-sm">Medicine orders placed through MediVoice AI — click to expand items</p>
-      </div>
-
-      {!isLoading && orders.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 animate-fade-in">
-          <div className="bg-card border border-border rounded-xl p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{active}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">In Progress</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{delivered}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Delivered</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold">${totalSpend.toFixed(0)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Total Spend</p>
-          </div>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl animate-fade-in-down" style={{background:"linear-gradient(135deg, #0369a1 0%, #0891b2 50%, #059669 100%)"}}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-      )}
+        <div className="relative z-10 p-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs text-cyan-200 font-semibold uppercase tracking-wider">My Orders</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">My Orders</h1>
+              <p className="text-cyan-200 text-sm mt-1">Medicine orders placed through MediVoice AI — click to expand items</p>
+            </div>
+          </div>
+          {!isLoading && orders.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center border border-white/20">
+                <p className="text-2xl font-bold text-white">{active}</p>
+                <p className="text-xs text-cyan-200 mt-0.5">In Progress</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center border border-white/20">
+                <p className="text-2xl font-bold text-white">{delivered}</p>
+                <p className="text-xs text-cyan-200 mt-0.5">Delivered</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center border border-white/20">
+                <p className="text-2xl font-bold text-white">${totalSpend.toFixed(0)}</p>
+                <p className="text-xs text-cyan-200 mt-0.5">Total Spend</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1 w-fit animate-fade-in">
         {FILTER_TABS.map(t => {

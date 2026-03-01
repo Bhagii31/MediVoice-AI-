@@ -216,37 +216,43 @@ export default function PharmacyInvoices() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="animate-fade-in-down">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            {pharmacyName || "My Pharmacy"}
-          </span>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl animate-fade-in-down" style={{background:"linear-gradient(135deg, #065f46 0%, #059669 40%, #0284c7 100%)"}}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-        <h1 className="text-2xl font-bold" data-testid="text-page-title">Invoices</h1>
-        <p className="text-muted-foreground text-sm">All orders and invoices from your pharmacy</p>
-      </div>
+        <div className="relative z-10 p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-blink" />
+            <span className="text-xs text-emerald-200 font-semibold uppercase tracking-wider">
+              {pharmacyName || "My Pharmacy"}
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Invoices</h1>
+          <p className="text-emerald-200 text-sm mt-1">All orders and invoices from your pharmacy</p>
 
-      {!isLoading && orders.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in">
-          <div className="bg-card border border-border rounded-xl p-4 space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Total Invoices</p>
-            <p className="text-2xl font-bold">{orders.length}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4 space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Total Paid</p>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${totalPaid.toFixed(0)}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4 space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Pending Payment</p>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">${totalPending.toFixed(0)}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4 space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Delivered</p>
-            <p className="text-2xl font-bold">{orders.filter((o: any) => o.status === "Delivered").length}</p>
-          </div>
+          {!isLoading && orders.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              <div className="bg-white/15 backdrop-blur border border-white/20 rounded-xl p-3 space-y-1">
+                <p className="text-xs text-emerald-200 font-medium">Total Invoices</p>
+                <p className="text-2xl font-bold text-white">{orders.length}</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur border border-white/20 rounded-xl p-3 space-y-1">
+                <p className="text-xs text-emerald-200 font-medium">Total Paid</p>
+                <p className="text-2xl font-bold text-white">${totalPaid.toFixed(0)}</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur border border-white/20 rounded-xl p-3 space-y-1">
+                <p className="text-xs text-emerald-200 font-medium">Pending Payment</p>
+                <p className="text-2xl font-bold text-white">${totalPending.toFixed(0)}</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur border border-white/20 rounded-xl p-3 space-y-1">
+                <p className="text-xs text-emerald-200 font-medium">Delivered</p>
+                <p className="text-2xl font-bold text-white">{orders.filter((o: any) => o.status === "Delivered").length}</p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="relative max-w-sm animate-fade-in">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -16,71 +16,84 @@ const STATUS_CONFIG: Record<string, { bg: string; dot: string; text: string }> =
   Expired:   { bg: "bg-muted text-muted-foreground border border-border", dot: "bg-gray-400", text: "Expired" },
 };
 
-const TIER_COLORS: Record<string, string> = {
-  Gold:   "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400",
-  Silver: "bg-slate-100 dark:bg-slate-900/50 text-slate-700 dark:text-slate-400",
-  Bronze: "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400",
+const TIER_COLORS: Record<string, { pill: string; gradient: string }> = {
+  Gold:   { pill: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800", gradient: "from-amber-400 via-yellow-500 to-orange-400" },
+  Silver: { pill: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700", gradient: "from-slate-400 via-gray-500 to-zinc-400" },
+  Bronze: { pill: "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-800", gradient: "from-orange-500 via-amber-500 to-yellow-600" },
 };
+
+const CARD_GRADIENTS = [
+  "from-violet-600 via-purple-600 to-indigo-600",
+  "from-emerald-500 via-teal-500 to-cyan-500",
+  "from-rose-500 via-pink-500 to-fuchsia-500",
+  "from-orange-500 via-amber-500 to-yellow-500",
+  "from-blue-600 via-indigo-500 to-violet-500",
+  "from-teal-500 via-emerald-500 to-green-500",
+];
 
 function OfferCard({ offer, index }: { offer: any; index: number }) {
   const isExpired = offer.valid_to && new Date(offer.valid_to) < new Date();
   const status = isExpired ? "Expired" : (offer.status || "Active");
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.Active;
+  const tierInfo = offer.target_group ? TIER_COLORS[offer.target_group] : null;
+  const cardGradient = isExpired ? "from-gray-400 via-slate-400 to-gray-500" : CARD_GRADIENTS[index % CARD_GRADIENTS.length];
 
   return (
     <Card
-      className="hover-elevate border-0 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden animate-fade-in-up group"
+      className="hover-elevate border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden animate-fade-in-up group"
       style={{ animationDelay: `${index * 60}ms` }}
       data-testid={`card-offer-${offer._id}`}
     >
-      <div className={`h-1.5 w-full ${status === "Active" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : status === "Scheduled" ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-muted"}`} />
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${status === "Active" ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-muted"}`}>
-              <Tag className={`h-5 w-5 ${status === "Active" ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`} />
+      <div className={`relative bg-gradient-to-br ${cardGradient} p-4 pb-5 overflow-hidden`}>
+        <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-16 h-16 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/2" />
+        <div className="relative z-10">
+          <div className="flex items-start justify-between">
+            <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Tag className="h-5 w-5 text-white" />
             </div>
-            <div className="min-w-0">
-              <p className="font-semibold text-sm truncate" data-testid={`text-offer-name-${offer._id}`}>{offer.offer_name}</p>
-              {offer.target_group && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 inline-block ${TIER_COLORS[offer.target_group] || "bg-muted text-muted-foreground"}`}>
-                  {offer.target_group} tier
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
             {offer.discount_percent && (
-              <div className="flex items-center gap-0.5 text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                {offer.discount_percent}<Percent className="h-4 w-4 mt-1.5" />
+              <div className="flex items-baseline gap-0.5 text-white drop-shadow">
+                <span className="text-3xl font-black leading-none">{offer.discount_percent}</span>
+                <Percent className="h-4 w-4" />
               </div>
             )}
-            <div className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.bg}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+          </div>
+          <p className="font-bold text-white mt-2 text-sm leading-tight" data-testid={`text-offer-name-${offer._id}`}>{offer.offer_name}</p>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {offer.target_group && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white border border-white/30">
+                {offer.target_group} Tier
+              </span>
+            )}
+            <div className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white border border-white/30">
+              <span className={`h-1.5 w-1.5 rounded-full ${status === "Active" ? "bg-emerald-300 animate-blink" : "bg-gray-300"}`} />
               {cfg.text}
             </div>
           </div>
         </div>
+      </div>
 
+      <CardContent className="p-4 space-y-2.5">
         {offer.description && <p className="text-xs text-muted-foreground leading-relaxed">{offer.description}</p>}
 
         {offer.applicable_medicines?.length > 0 && (
           <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
-            <Pill className="h-3 w-3 mt-0.5 flex-shrink-0 text-emerald-500" />
+            <Pill className="h-3 w-3 mt-0.5 flex-shrink-0 text-violet-500" />
             <span className="line-clamp-1">{offer.applicable_medicines.join(", ")}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-border">
+        <div className="flex items-center justify-between flex-wrap gap-2 pt-1.5 border-t border-border">
           {offer.promotion_channel?.length > 0 && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Megaphone className="h-3 w-3" />
+              <Megaphone className="h-3 w-3 text-violet-500" />
               <span>{offer.promotion_channel.join(", ")}</span>
             </div>
           )}
           {(offer.valid_from || offer.valid_to) && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-              <Calendar className="h-3 w-3" />
+              <Calendar className="h-3 w-3 text-violet-500" />
               <span>{offer.valid_from} → {offer.valid_to}</span>
             </div>
           )}
@@ -180,12 +193,22 @@ export default function Offers() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Offers & Promotions</h1>
-          <p className="text-muted-foreground text-sm">Medicine promotions discussed during MediVoice AI calls</p>
+      <div className="relative rounded-2xl overflow-hidden hero-rose p-6 shadow-xl animate-fade-in-down">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full bg-black/10 translate-y-1/2" />
         </div>
-        <AddOfferDialog />
+        <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="h-4 w-4 text-pink-200" />
+              <span className="text-xs text-pink-200 font-semibold uppercase tracking-wider">Promotions</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Offers & Promotions</h1>
+            <p className="text-pink-200 text-sm mt-1">Medicine promotions discussed during MediVoice AI calls</p>
+          </div>
+          <AddOfferDialog />
+        </div>
       </div>
 
       {!isLoading && offers.length > 0 && (

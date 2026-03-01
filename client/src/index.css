@@ -277,6 +277,63 @@
 .dealer-gradient { background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); }
 .pharmacy-gradient { background: linear-gradient(135deg, #059669 0%, #0891b2 100%); }
 
+/* colorful hero banners */
+.hero-dealer {
+  background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 40%, #2563eb 100%);
+}
+.hero-pharmacy {
+  background: linear-gradient(135deg, #047857 0%, #0891b2 60%, #0284c7 100%);
+}
+.hero-orange {
+  background: linear-gradient(135deg, #ea580c 0%, #d97706 50%, #ca8a04 100%);
+}
+.hero-rose {
+  background: linear-gradient(135deg, #be185d 0%, #9333ea 50%, #6d28d9 100%);
+}
+
+/* colorful section backgrounds */
+.section-purple { background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(79,70,229,0.05) 100%); }
+.section-emerald { background: linear-gradient(135deg, rgba(5,150,105,0.08) 0%, rgba(8,145,178,0.05) 100%); }
+.section-orange { background: linear-gradient(135deg, rgba(234,88,12,0.08) 0%, rgba(202,138,4,0.05) 100%); }
+.section-rose { background: linear-gradient(135deg, rgba(190,24,93,0.08) 0%, rgba(147,51,234,0.05) 100%); }
+
+/* animated gradient text */
+.gradient-text-purple {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5, #2563eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #059669, #0891b2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-multicolor {
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 40%, #ea580c 70%, #ca8a04 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* colorful card border accents */
+.card-accent-purple { border-top: 3px solid; border-image: linear-gradient(90deg, #7c3aed, #4f46e5) 1; }
+.card-accent-emerald { border-top: 3px solid; border-image: linear-gradient(90deg, #059669, #0891b2) 1; }
+
+/* mesh backgrounds */
+.mesh-purple {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(124,58,237,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(79,70,229,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(59,130,246,0.08) 0%, transparent 60%);
+}
+.mesh-emerald {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(5,150,105,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(8,145,178,0.12) 0%, transparent 50%);
+}
+
 /* shimmer loading effect */
 .shimmer-bg {
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);

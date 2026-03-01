@@ -72,26 +72,34 @@ export default function Conversations() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-2 w-2 rounded-full bg-violet-500" />
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Call Logs</span>
-          </div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Conversations</h1>
-          <p className="text-muted-foreground text-sm">AI voice call recordings from pharmacies — stored in MongoDB Atlas</p>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl animate-fade-in-down" style={{background: "linear-gradient(135deg, #5b21b6 0%, #7c3aed 40%, #4f46e5 100%)"}}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-56 h-56 rounded-full bg-white/10 -translate-y-1/3 translate-x-1/4" />
+          <div className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-black/10 translate-y-1/2" />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 border-dashed hover:border-solid hover:bg-muted transition-all"
-          onClick={() => conversationsToCSV(conversations)}
-          disabled={!conversations.length}
-          data-testid="button-download-conversations-csv"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="relative z-10 p-6 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex gap-0.5">
+                {[...Array(4)].map((_, i) => <div key={i} className="wave-bar h-3 bg-violet-300" style={{animationDelay: `${i*0.1}s`}} />)}
+              </div>
+              <span className="text-xs text-violet-200 font-semibold uppercase tracking-wider">Call Logs</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Conversations</h1>
+            <p className="text-violet-200 text-sm mt-1">AI voice call recordings from pharmacies — stored in MongoDB Atlas</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20"
+            onClick={() => conversationsToCSV(conversations)}
+            disabled={!conversations.length}
+            data-testid="button-download-conversations-csv"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap animate-fade-in">

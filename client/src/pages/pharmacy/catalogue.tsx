@@ -278,16 +278,24 @@ export default function PharmacyCatalogue() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Medicine Catalogue</h1>
-          <p className="text-muted-foreground text-sm">Browse and enquire medicines — click any card for full details</p>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl animate-fade-in-down" style={{background:"linear-gradient(135deg, #7c3aed 0%, #059669 60%, #0891b2 100%)"}}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+        <div className="relative z-10 p-6 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-violet-200 font-semibold uppercase tracking-wider">Product Catalogue</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Medicine Catalogue</h1>
+            <p className="text-violet-200 text-sm mt-1">Browse and enquire medicines — click any card for full details</p>
+          </div>
+          <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white/15 border border-white/30 rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-2 transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+              className={`p-2 transition-colors ${viewMode === "grid" ? "bg-white/30 text-white" : "hover:bg-white/10 text-white/70"}`}
               data-testid="button-view-grid"
               title="Grid view"
             >
@@ -295,7 +303,7 @@ export default function PharmacyCatalogue() {
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-2 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+              className={`p-2 transition-colors ${viewMode === "list" ? "bg-white/30 text-white" : "hover:bg-white/10 text-white/70"}`}
               data-testid="button-view-list"
               title="List view"
             >
@@ -303,10 +311,11 @@ export default function PharmacyCatalogue() {
             </button>
           </div>
           <Link href="/pharmacy/voice">
-            <Button size="sm" className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-0">
+            <Button size="sm" className="gap-2 bg-white/15 border border-white/30 text-white hover:bg-white/25">
               <Phone className="h-3.5 w-3.5" /> Call AI to Order
             </Button>
           </Link>
+          </div>
         </div>
       </div>
 

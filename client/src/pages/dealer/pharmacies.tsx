@@ -265,16 +265,22 @@ export default function PharmaciesPage() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-2 w-2 rounded-full bg-purple-500 animate-blink" />
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Registered Pharmacies</span>
-          </div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Pharmacies</h1>
-          <p className="text-muted-foreground text-sm">Tap "Call AI" to have MediVoice AI call the pharmacy via Twilio</p>
+      <div className="relative rounded-2xl overflow-hidden hero-dealer p-6 shadow-xl animate-fade-in-down">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
         </div>
-        <AddPharmacyDialog />
+        <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-300 animate-blink" />
+              <span className="text-xs text-purple-200 font-semibold uppercase tracking-wider">Registered Pharmacies</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight" data-testid="text-page-title">Pharmacies</h1>
+            <p className="text-purple-200 text-sm mt-1">Tap "Call AI" to have MediVoice AI call the pharmacy via Twilio</p>
+          </div>
+          <AddPharmacyDialog />
+        </div>
       </div>
 
       <div className="flex gap-3 flex-wrap animate-fade-in">

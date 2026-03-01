@@ -174,20 +174,28 @@ export default function DealerDashboard() {
 
   return (
     <div className="p-6 space-y-7">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-2 w-2 rounded-full bg-purple-500 animate-blink" />
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Dealer Portal</span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-blink" />
-              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Live</span>
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="text-page-title">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Your medicine distribution overview — live data from MongoDB Atlas</p>
+      <div className="relative rounded-2xl overflow-hidden hero-dealer p-6 shadow-xl animate-fade-in-down">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/4" />
+          <div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2" />
         </div>
-        <LiveRefreshIndicator interval={30} />
+        <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-purple-200 font-semibold uppercase tracking-wider">Dealer Portal</span>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/30">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-blink" />
+                <span className="text-[10px] font-bold text-white uppercase tracking-wide">Live</span>
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white" data-testid="text-page-title">Dashboard</h1>
+            <p className="text-purple-200 text-sm mt-1">Medicine distribution overview — MongoDB Atlas · OpenAI · Twilio</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <LiveRefreshIndicator interval={30} />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
