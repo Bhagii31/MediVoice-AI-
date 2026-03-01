@@ -5,31 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ClipboardList, User, Calendar, CreditCard, Package } from "lucide-react";
+import { ClipboardList, User, Calendar, CreditCard, Package, ChevronRight, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const STATUS_COLORS: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  Processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  Delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  Cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+const STATUS_CONFIG: Record<string, { bg: string; dot: string; textColor: string }> = {
+  Pending:    { bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400", dot: "bg-amber-500", textColor: "text-amber-700 dark:text-amber-400" },
+  Processing: { bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-400", dot: "bg-blue-500 animate-blink", textColor: "text-blue-700 dark:text-blue-400" },
+  Delivered:  { bg: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500", textColor: "text-emerald-700 dark:text-emerald-400" },
+  Cancelled:  { bg: "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 text-red-700 dark:text-red-400", dot: "bg-red-500", textColor: "text-red-700 dark:text-red-400" },
 };
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[status] || "bg-muted text-muted-foreground"}`}>
-      {status}
-    </span>
-  );
-}
 
 const NEXT_STATUS: Record<string, string> = {
   Pending: "Processing",
   Processing: "Delivered",
 };
 
-function OrderCard({ request }: { request: any }) {
+function OrderCard({ request, index }: { request: any; index: number }) {
   const { toast } = useToast();
+  const cfg = STATUS_CONFIG[request.status] || STATUS_CONFIG.Pending;
+  const nextStatus = NEXT_STATUS[request.status];
+
   const mutation = useMutation({
     mutationFn: async (status: string) => {
       const res = await apiRequest("PUT", `/api/stock-requests/${request._id}/status`, { status });
@@ -43,65 +38,72 @@ function OrderCard({ request }: { request: any }) {
     onError: () => toast({ title: "Failed to update status", variant: "destructive" }),
   });
 
-  const nextStatus = NEXT_STATUS[request.status];
-
   return (
-    <Card data-testid={`card-order-${request._id}`}>
+    <Card
+      className="hover-elevate border-0 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden animate-fade-in-up"
+      style={{ animationDelay: `${index * 60}ms` }}
+      data-testid={`card-order-${request._id}`}
+    >
+      <div className={`h-1 w-full ${request.status === "Delivered" ? "bg-emerald-500" : request.status === "Processing" ? "bg-blue-500" : request.status === "Cancelled" ? "bg-red-500" : "bg-amber-500"}`} />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1">
-            <p className="font-semibold text-sm">{request.order_id || `#${String(request._id).slice(-6).toUpperCase()}`}</p>
+          <div className="space-y-1 min-w-0">
+            <p className="font-bold text-sm tracking-wide">{request.order_id || `#${String(request._id).slice(-6).toUpperCase()}`}</p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <User className="h-3 w-3" />
-              <span>Pharmacy ID: {request.pharmacist_id || "—"}</span>
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">ID: {request.pharmacist_id || "—"}</span>
             </div>
             {request.order_timestamp && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{new Date(request.order_timestamp).toLocaleDateString()}</span>
+                <span>{new Date(request.order_timestamp).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
               </div>
             )}
           </div>
-          <StatusBadge status={request.status} />
+          <div className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border ${cfg.bg} flex-shrink-0`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+            {request.status}
+          </div>
         </div>
 
         {request.items?.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {request.items.map((item: any, i: number) => (
-              <div key={i} className="flex items-center justify-between text-sm bg-muted rounded px-2 py-1">
-                <div className="flex items-center gap-1">
-                  <Package className="h-3 w-3 text-muted-foreground" />
-                  <span>{item.medicine_name}</span>
+              <div key={i} className="flex items-center justify-between text-xs bg-muted/60 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                  <Package className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium">{item.medicine_name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <span>×{item.quantity}</span>
-                  {item.unit_price && <span className="font-medium text-foreground">${(item.unit_price * item.quantity).toFixed(2)}</span>}
+                  {item.unit_price && <span className="font-semibold text-foreground">${(item.unit_price * item.quantity).toFixed(2)}</span>}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-1">
-          <div className="space-y-0.5">
+        <div className="flex items-center justify-between pt-1 border-t border-border gap-2">
+          <div>
             {request.total_amount !== undefined && (
-              <p className="font-semibold text-sm">Total: ${request.total_amount.toFixed(2)}</p>
+              <p className="font-bold text-base">${request.total_amount.toFixed(2)}</p>
             )}
             {request.payment_status && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <CreditCard className="h-3 w-3" />
-                <span>{request.payment_status} · {request.mode_of_payment || ""}</span>
+                <span>{request.payment_status}{request.mode_of_payment ? ` · ${request.mode_of_payment}` : ""}</span>
               </div>
             )}
           </div>
           {nextStatus && (
             <Button
               size="sm"
-              variant="outline"
+              className={`gap-1 text-xs ${nextStatus === "Delivered" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
               onClick={() => mutation.mutate(nextStatus)}
               disabled={mutation.isPending}
               data-testid={`button-advance-status-${request._id}`}
             >
+              <ChevronRight className="h-3.5 w-3.5" />
               Mark {nextStatus}
             </Button>
           )}
@@ -110,6 +112,14 @@ function OrderCard({ request }: { request: any }) {
     </Card>
   );
 }
+
+const FILTERS = [
+  { value: "all", label: "All Orders" },
+  { value: "Pending", label: "Pending" },
+  { value: "Processing", label: "Processing" },
+  { value: "Delivered", label: "Delivered" },
+  { value: "Cancelled", label: "Cancelled" },
+];
 
 export default function StockRequests() {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -123,41 +133,60 @@ export default function StockRequests() {
     }
   });
 
+  const pending = requests.filter((r: any) => r.status === "Pending").length;
+  const processing = requests.filter((r: any) => r.status === "Processing").length;
+
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Orders</h1>
-          <p className="text-muted-foreground text-sm">Medicine orders from pharmacies</p>
+          <p className="text-muted-foreground text-sm">Medicine orders from pharmacies — advance through the pipeline below</p>
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40" data-testid="select-status-filter">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="Processing">Processing</SelectItem>
-            <SelectItem value="Delivered">Delivered</SelectItem>
-            <SelectItem value="Cancelled">Cancelled</SelectItem>
+            {FILTERS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
+      {!isLoading && requests.length > 0 && (
+        <div className="flex gap-3 flex-wrap animate-fade-in">
+          {pending > 0 && (
+            <div className="flex items-center gap-2 text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-900/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{pending} pending
+            </div>
+          )}
+          {processing > 0 && (
+            <div className="flex items-center gap-2 text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-900/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-blink" />{processing} processing
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs bg-muted text-muted-foreground px-3 py-1.5 rounded-full">
+            <TrendingUp className="h-3 w-3" />{requests.length} total
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 rounded-md" />)}
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
         </div>
       ) : requests.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 text-center">
-            <ClipboardList className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">No orders found{statusFilter !== "all" ? ` with status "${statusFilter}"` : ""}.</p>
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <ClipboardList className="h-8 w-8 text-muted-foreground opacity-40" />
+            </div>
+            <p className="text-muted-foreground font-medium">No orders found{statusFilter !== "all" ? ` with status "${statusFilter}"` : ""}.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {requests.map((r: any) => <OrderCard key={r._id} request={r} />)}
+          {requests.map((r: any, i: number) => <OrderCard key={r._id} request={r} index={i} />)}
         </div>
       )}
     </div>

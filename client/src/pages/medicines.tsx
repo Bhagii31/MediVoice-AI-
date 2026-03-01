@@ -7,48 +7,74 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Pill, Plus, Search, Package, Calendar, Percent } from "lucide-react";
+import { Pill, Plus, Search, Package, Calendar, Percent, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-function MedicineCard({ medicine }: { medicine: any }) {
-  const isExpiringSoon = medicine.expiry_date && new Date(medicine.expiry_date) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-  const isExpired = medicine.expiry_date && new Date(medicine.expiry_date) < new Date();
+function ExpiryStatus({ date }: { date: string }) {
+  const expiryDate = new Date(date);
+  const now = new Date();
+  const soon = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  const isExpired = expiryDate < now;
+  const isExpiringSoon = !isExpired && expiryDate < soon;
+  return (
+    <div className={`flex items-center gap-1 text-xs ${isExpired ? "text-red-500" : isExpiringSoon ? "text-orange-500" : "text-muted-foreground"}`}>
+      <Calendar className="h-3 w-3" />
+      <span>Exp: {date}</span>
+      {isExpired && <span className="font-semibold">(Expired)</span>}
+      {isExpiringSoon && <span className="font-semibold">(Soon)</span>}
+    </div>
+  );
+}
+
+function MedicineCard({ medicine, index }: { medicine: any; index: number }) {
+  const stockPct = medicine.stock_quantity > 0 ? Math.min(100, (medicine.stock_quantity / 1000) * 100) : 0;
+  const isLow = medicine.stock_quantity <= 50;
 
   return (
-    <div className="flex items-center justify-between py-3 px-4 border-b last:border-0" data-testid={`row-medicine-${medicine._id}`}>
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="h-9 w-9 rounded-md bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
-          <Pill className="h-4 w-4 text-green-600 dark:text-green-400" />
-        </div>
-        <div className="min-w-0">
-          <p className="font-medium text-sm truncate" data-testid={`text-medicine-name-${medicine._id}`}>{medicine.name}</p>
-          <p className="text-xs text-muted-foreground">{medicine.manufacturer || "—"}</p>
-        </div>
+    <div
+      className="flex items-center gap-3 py-3.5 px-4 border-b last:border-0 hover:bg-muted/40 transition-colors animate-fade-in-up group"
+      style={{ animationDelay: `${index * 40}ms` }}
+      data-testid={`row-medicine-${medicine._id}`}
+    >
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 ${medicine.stock_quantity <= 0 ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-orange-100 dark:bg-orange-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
+        <Pill className={`h-5 w-5 ${medicine.stock_quantity <= 0 ? "text-red-600 dark:text-red-400" : isLow ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400"}`} />
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0 ml-2 flex-wrap justify-end">
-        {medicine.category && <Badge variant="outline" className="text-xs">{medicine.category}</Badge>}
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-sm" data-testid={`text-medicine-name-${medicine._id}`}>{medicine.name}</p>
+          {medicine.category && <Badge variant="outline" className="text-xs h-4">{medicine.category}</Badge>}
+          {medicine.discount > 0 && (
+            <span className="text-xs bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+              <Percent className="h-2.5 w-2.5" />{medicine.discount}% off
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          <p className="text-xs text-muted-foreground">{medicine.manufacturer || "—"}</p>
+          {medicine.expiry_date && <ExpiryStatus date={medicine.expiry_date} />}
+        </div>
         {medicine.stock_quantity !== undefined && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Package className="h-3 w-3" />
-            <span>{medicine.stock_quantity} units</span>
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex-1 max-w-24 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${medicine.stock_quantity <= 0 ? "bg-red-500" : isLow ? "bg-orange-500" : "bg-emerald-500"}`}
+                style={{ width: `${stockPct}%` }}
+              />
+            </div>
+            <span className={`text-xs font-medium ${isLow ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground"}`}>
+              {medicine.stock_quantity} units{isLow && <TrendingDown className="inline h-3 w-3 ml-0.5" />}
+            </span>
           </div>
         )}
-        {medicine.discount > 0 && (
-          <div className="flex items-center gap-1 text-xs text-green-600">
-            <Percent className="h-3 w-3" />
-            <span>{medicine.discount}% off</span>
-          </div>
-        )}
+      </div>
+
+      <div className="flex-shrink-0 text-right">
         {medicine.price_per_unit && (
-          <span className="text-sm font-semibold">${medicine.price_per_unit.toFixed(2)}</span>
+          <p className="text-base font-bold">${medicine.price_per_unit.toFixed(2)}</p>
         )}
-        {medicine.expiry_date && (
-          <div className={`flex items-center gap-1 text-xs ${isExpired ? "text-red-500" : isExpiringSoon ? "text-orange-500" : "text-muted-foreground"}`}>
-            <Calendar className="h-3 w-3" />
-            <span>Exp: {medicine.expiry_date}</span>
-          </div>
-        )}
+        <p className="text-xs text-muted-foreground">per unit</p>
       </div>
     </div>
   );
@@ -83,7 +109,9 @@ function AddMedicineDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-medicine"><Plus className="h-4 w-4 mr-2" />Add Medicine</Button>
+        <Button className="gap-2" data-testid="button-add-medicine">
+          <Plus className="h-4 w-4" />Add Medicine
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Add Medicine</DialogTitle></DialogHeader>
@@ -140,31 +168,54 @@ export default function Medicines() {
     }
   });
 
+  const inStock = medicines.filter((m: any) => m.stock_quantity > 0).length;
+  const lowStock = medicines.filter((m: any) => m.stock_quantity > 0 && m.stock_quantity <= 50).length;
+
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Medicines</h1>
-          <p className="text-muted-foreground text-sm">Medicine catalog — dealer warehouse stock</p>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Medicine Catalogue</h1>
+          <p className="text-muted-foreground text-sm">Dealer warehouse — all medicines with real-time stock levels</p>
         </div>
         <AddMedicineDialog />
       </div>
 
-      <div className="relative max-w-sm">
+      {!isLoading && medicines.length > 0 && (
+        <div className="flex gap-4 flex-wrap animate-fade-in">
+          <div className="flex items-center gap-2 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-900/60">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{inStock} in stock
+          </div>
+          {lowStock > 0 && (
+            <div className="flex items-center gap-2 text-xs bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-900/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-blink" />{lowStock} low stock
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs bg-muted text-muted-foreground px-3 py-1.5 rounded-full">
+            {medicines.length} total medicines
+          </div>
+        </div>
+      )}
+
+      <div className="relative max-w-sm animate-fade-in">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input className="pl-9" placeholder="Search medicines..." value={search} onChange={e => setSearch(e.target.value)} data-testid="input-search-medicine" />
       </div>
 
-      <Card>
+      <Card className="border-0 shadow-sm overflow-hidden animate-scale-in">
         {isLoading ? (
-          <CardContent className="p-0">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-none border-b" />)}</CardContent>
+          <CardContent className="p-0">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-none border-b" />)}</CardContent>
         ) : medicines.length === 0 ? (
           <CardContent className="py-14 text-center">
-            <Pill className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">{search ? "No medicines match your search." : "No medicines in the catalog."}</p>
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <Pill className="h-8 w-8 text-muted-foreground opacity-40" />
+            </div>
+            <p className="text-muted-foreground font-medium">{search ? "No medicines match your search." : "No medicines in the catalog."}</p>
           </CardContent>
         ) : (
-          <CardContent className="p-0">{medicines.map((m: any) => <MedicineCard key={m._id} medicine={m} />)}</CardContent>
+          <CardContent className="p-0">
+            {medicines.map((m: any, i: number) => <MedicineCard key={m._id} medicine={m} index={i} />)}
+          </CardContent>
         )}
       </Card>
     </div>

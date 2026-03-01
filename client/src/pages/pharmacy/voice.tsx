@@ -1,198 +1,264 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Mic, MicOff, Send, PhoneOff, Zap, Bot, User, Lightbulb } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { Mic, MicOff, Send, Phone, PhoneOff, Bot, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface Message {
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp: Date;
+type Message = { role: "user" | "assistant"; content: string };
+
+const SUGGESTIONS = [
+  "Do you have Paracetamol in stock?",
+  "What medicines are low on stock?",
+  "Tell me about current offers and discounts.",
+  "What is the price of Amoxicillin?",
+];
+
+function WaveVisualizer({ active }: { active: boolean }) {
+  const heights = [20, 35, 28, 42, 18, 38, 25, 45, 20, 32, 28, 38, 22];
+  return (
+    <div className="flex items-end gap-1 h-10">
+      {heights.map((h, i) => (
+        <div
+          key={i}
+          className={`rounded-full transition-all duration-300 ${active ? "bg-emerald-400" : "bg-muted-foreground/20"}`}
+          style={{
+            width: "3px",
+            height: active ? `${h}px` : "4px",
+            animation: active ? `waveBar ${0.6 + (i % 5) * 0.1}s ease-in-out ${i * 0.05}s infinite` : "none",
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
-export default function PharmacyVoice() {
+function MessageBubble({ msg, index }: { msg: Message; index: number }) {
+  const isUser = msg.role === "user";
+  return (
+    <div
+      className={`flex items-end gap-2.5 animate-fade-in-up ${isUser ? "flex-row-reverse" : ""}`}
+      style={{ animationDelay: `${index * 40}ms` }}
+    >
+      <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${isUser ? "bg-emerald-600" : "bg-gradient-to-br from-purple-500 to-indigo-600"}`}>
+        {isUser ? <User className="h-3.5 w-3.5 text-white" /> : <Bot className="h-3.5 w-3.5 text-white" />}
+      </div>
+      <div className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm text-sm leading-relaxed ${
+        isUser
+          ? "bg-emerald-600 text-white rounded-br-sm"
+          : "bg-card border border-border text-foreground rounded-bl-sm"
+      }`}>
+        {msg.content}
+      </div>
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex items-end gap-2.5 animate-fade-in">
+      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+        <Bot className="h-3.5 w-3.5 text-white" />
+      </div>
+      <div className="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-1.5">
+          {[0, 0.2, 0.4].map((delay) => (
+            <div
+              key={delay}
+              className="h-2 w-2 rounded-full bg-muted-foreground/40"
+              style={{ animation: `blink 1.2s ease-in-out ${delay}s infinite` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function VoicePage() {
   const { toast } = useToast();
+  const [callActive, setCallActive] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [callActive, setCallActive] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState<{ role: string; content: string }[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const chatMutation = useMutation({
-    mutationFn: async (message: string) => {
-      const newHistory = [...conversationHistory, { role: "user", content: message }];
-      const res = await apiRequest("POST", "/api/ai/chat", { message, conversationHistory });
-      const data = await res.json();
-      return { data, newHistory };
-    },
-    onSuccess: ({ data, newHistory }) => {
-      const aiMessage = data.reply || data.message || "I'm sorry, I couldn't process that.";
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: aiMessage,
-        timestamp: new Date(),
-      }]);
-      setConversationHistory([...newHistory, { role: "assistant", content: aiMessage }]);
-    },
-    onError: () => {
-      toast({ title: "Connection error", description: "Could not reach MediVoice AI. Please try again.", variant: "destructive" });
-    }
+    mutationFn: (message: string) =>
+      apiRequest("POST", "/api/ai/chat", {
+        message,
+        conversationHistory: messages.map((m) => ({ role: m.role, content: m.content })),
+      }).then((r) => r.json()),
   });
 
   const startCall = () => {
     setCallActive(true);
     setMessages([{
       role: "assistant",
-      content: "Hello! This is MediVoice AI. I'm here to help you with medicine availability, stock checks, and ordering. How can I assist you today?",
-      timestamp: new Date(),
+      content: "Hello! I'm MediVoice AI, your pharmacy assistant. I can help you check medicine availability, pricing, and current promotional offers. How can I assist you today?",
     }]);
-    setConversationHistory([]);
   };
 
   const endCall = () => {
     setCallActive(false);
-    setMessages(prev => [...prev, {
-      role: "system",
-      content: "Call ended.",
-      timestamp: new Date(),
-    }]);
-  };
-
-  const sendMessage = () => {
-    if (!input.trim() || chatMutation.isPending) return;
-    const message = input.trim();
+    setMessages([]);
     setInput("");
-    setMessages(prev => [...prev, { role: "user", content: message, timestamp: new Date() }]);
-    chatMutation.mutate(message);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  const sendMessage = async (text?: string) => {
+    const msg = text || input.trim();
+    if (!msg || chatMutation.isPending) return;
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", content: msg }]);
+    setIsTyping(true);
+    try {
+      const data = await chatMutation.mutateAsync(msg);
+      setIsTyping(false);
+      const reply = data.response || data.message || "I'm sorry, I couldn't process that right now.";
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch {
+      setIsTyping(false);
+      toast({ title: "Error", description: "Failed to reach MediVoice AI. Try again.", variant: "destructive" });
     }
   };
 
   return (
-    <div className="p-6 space-y-5 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold" data-testid="text-page-title">Call MediVoice AI</h1>
-        <p className="text-muted-foreground text-sm">Ask about medicines, check stock, or place an order via chat</p>
+    <div className="h-full flex flex-col p-4 gap-4">
+      <div className="flex items-center justify-between animate-fade-in-down">
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            {callActive && <div className="h-2 w-2 rounded-full bg-emerald-500 animate-blink" />}
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              {callActive ? "Call Active" : "AI Assistant"}
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">MediVoice AI</h1>
+        </div>
+        {callActive && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={endCall}
+            className="gap-2 animate-fade-in"
+            data-testid="button-end-call"
+          >
+            <PhoneOff className="h-4 w-4" /> End Call
+          </Button>
+        )}
       </div>
 
-      <Card className="border-2 border-dashed border-emerald-200 dark:border-emerald-800">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${callActive ? "bg-emerald-500 animate-pulse" : "bg-muted"}`}>
-                {callActive ? <Mic className="h-5 w-5 text-white" /> : <MicOff className="h-5 w-5 text-muted-foreground" />}
+      {!callActive ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-scale-in">
+          <div className="text-center">
+            <div className="relative inline-block mb-6">
+              <div className="h-28 w-28 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-2xl animate-float">
+                <Mic className="h-14 w-14 text-white" />
               </div>
-              <div>
-                <p className="font-medium text-sm">{callActive ? "Call in progress" : "Not connected"}</p>
-                <p className="text-xs text-muted-foreground">{callActive ? "MediVoice AI is listening" : "Start a session to chat with the AI"}</p>
+              <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center shadow-md animate-float delay-300">
+                <Zap className="h-4 w-4 text-white" />
               </div>
             </div>
-            {callActive ? (
-              <Button variant="destructive" size="sm" onClick={endCall} data-testid="button-end-call">
-                <PhoneOff className="h-4 w-4 mr-1" /> End Call
-              </Button>
-            ) : (
-              <Button size="sm" onClick={startCall} className="bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="button-start-call">
-                <Phone className="h-4 w-4 mr-1" /> Start Call
-              </Button>
-            )}
+            <h2 className="text-xl font-bold mb-2">Ready to Connect</h2>
+            <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
+              Start a conversation with MediVoice AI to inquire about medicines, check stock, and explore current offers.
+            </p>
           </div>
-        </CardContent>
-      </Card>
 
-      {messages.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Conversation</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="space-y-3 max-h-96 overflow-y-auto px-4 pb-4" data-testid="chat-messages">
-              {messages.map((msg, i) => (
-                msg.role === "system" ? (
-                  <div key={i} className="text-center text-xs text-muted-foreground py-1">— {msg.content} —</div>
-                ) : (
-                  <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    {msg.role === "assistant" && (
-                      <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                    )}
-                    <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
-                      msg.role === "user"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-muted text-foreground"
-                    }`}>
-                      <p>{msg.content}</p>
-                      <p className="text-xs opacity-60 mt-1">{msg.timestamp.toLocaleTimeString()}</p>
-                    </div>
-                    {msg.role === "user" && (
-                      <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <User className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                    )}
-                  </div>
-                )
-              ))}
-              {chatMutation.isPending && (
-                <div className="flex gap-2">
-                  <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0">
-                    <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div className="bg-muted rounded-xl px-3 py-2 text-sm text-muted-foreground">Thinking...</div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {callActive && (
-        <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message (e.g. 'Do you have Amoxicillin in stock?')"
-            disabled={chatMutation.isPending}
-            data-testid="input-chat-message"
-          />
-          <Button onClick={sendMessage} disabled={!input.trim() || chatMutation.isPending} data-testid="button-send-message">
-            <Send className="h-4 w-4" />
+          <Button
+            size="lg"
+            onClick={startCall}
+            className="gap-2.5 px-8 py-6 text-base font-semibold rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-ring"
+            data-testid="button-start-call"
+          >
+            <Mic className="h-5 w-5" /> Start Call
           </Button>
-        </div>
-      )}
 
-      {!callActive && messages.length === 0 && (
-        <Card className="bg-muted/30">
-          <CardContent className="p-4">
-            <p className="text-sm font-medium mb-2">What can you ask?</p>
-            <div className="space-y-1.5">
-              {[
-                "Do you have Amoxicillin 500mg in stock?",
-                "I need to order 100 units of Paracetamol",
-                "What offers are available for Gold tier?",
-                "When will my last order be delivered?",
-              ].map((suggestion, i) => (
-                <p key={i} className="text-xs text-muted-foreground flex items-center gap-2">
-                  <span className="text-emerald-500">›</span> {suggestion}
-                </p>
+          <div className="w-full max-w-sm space-y-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+              <Lightbulb className="h-3.5 w-3.5" />
+              <span>Try asking:</span>
+            </div>
+            {SUGGESTIONS.map((s, i) => (
+              <button
+                key={s}
+                onClick={() => { startCall(); setTimeout(() => sendMessage(s), 600); }}
+                className="w-full text-left text-sm px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted hover:border-emerald-400 transition-all duration-200 text-muted-foreground hover:text-foreground animate-fade-in-up"
+                style={{ animationDelay: `${i * 70}ms` }}
+              >
+                "{s}"
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col rounded-2xl border border-border bg-card shadow-sm overflow-hidden animate-scale-in">
+          <div className="px-4 py-3 border-b border-border bg-gradient-to-r from-emerald-600 to-teal-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Bot className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">MediVoice AI</p>
+                  <p className="text-emerald-200 text-xs">Powered by OpenAI GPT-4</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <WaveVisualizer active={chatMutation.isPending || isTyping} />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((msg, i) => (
+              <MessageBubble key={i} msg={msg} index={i} />
+            ))}
+            {isTyping && <TypingIndicator />}
+            <div ref={bottomRef} />
+          </div>
+
+          {messages.length === 1 && (
+            <div className="px-4 pb-2 flex flex-wrap gap-2 animate-fade-in">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => sendMessage(s)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {s}
+                </button>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+
+          <div className="px-4 py-3 border-t border-border bg-background/50">
+            <div className="flex items-center gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                placeholder="Type your message…"
+                className="flex-1 rounded-xl border-border"
+                disabled={chatMutation.isPending}
+                data-testid="input-chat-message"
+              />
+              <Button
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || chatMutation.isPending}
+                size="icon"
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0 shadow-sm"
+                data-testid="button-send-message"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

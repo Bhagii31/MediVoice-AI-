@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { MessageSquare, Search, ArrowRight, Mic, Phone, Bot } from "lucide-react";
+import { MessageSquare, Search, ArrowRight, ChevronLeft, ChevronRight, Bot, Phone, Mic } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PharmacyConversations() {
@@ -24,12 +24,24 @@ export default function PharmacyConversations() {
 
   return (
     <div className="p-6 space-y-5">
-      <div>
+      <div className="animate-fade-in-down">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">AI History</span>
+        </div>
         <h1 className="text-2xl font-bold" data-testid="text-page-title">Call History</h1>
-        <p className="text-muted-foreground text-sm">All your conversations with MediVoice AI</p>
+        <p className="text-muted-foreground text-sm">All your conversations with MediVoice AI — stored in MongoDB Atlas</p>
       </div>
 
-      <div className="relative max-w-sm">
+      {!isLoading && (data?.total || 0) > 0 && (
+        <div className="flex items-center gap-3 flex-wrap animate-fade-in">
+          <div className="flex items-center gap-2 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-900/60">
+            <Phone className="h-3 w-3" />{data.total} conversations
+          </div>
+        </div>
+      )}
+
+      <div className="relative max-w-sm animate-fade-in">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9"
@@ -42,41 +54,47 @@ export default function PharmacyConversations() {
 
       {isLoading ? (
         <div className="space-y-2">
-          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-md" />)}
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
         </div>
       ) : conversations.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 text-center">
-            <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">No call history yet.</p>
-            <p className="text-sm text-muted-foreground mt-1">Use "Call AI Assistant" to start your first conversation.</p>
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <MessageSquare className="h-8 w-8 text-muted-foreground opacity-40" />
+            </div>
+            <p className="text-muted-foreground font-medium">No call history yet.</p>
+            <Link href="/pharmacy/voice">
+              <span className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-center gap-1 mt-2 hover:underline cursor-pointer">
+                <Mic className="h-4 w-4" /> Start your first MediVoice AI call
+              </span>
+            </Link>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {conversations.map((c: any) => (
+          {conversations.map((c: any, i: number) => (
             <Link key={c._id} href={`/pharmacy/conversations/${c._id}`}>
-              <Card className="hover-elevate cursor-pointer" data-testid={`card-conversation-${c._id}`}>
-                <CardContent className="flex items-center justify-between py-4 px-4 gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate" data-testid={`text-convo-pharmacy-${c._id}`}>
-                        {c.pharmacy_name || "MediVoice AI Call"}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {c.ai_response?.slice(0, 80) || (c.timestamp ? new Date(c.timestamp).toLocaleString() : "—")}
-                      </p>
-                    </div>
+              <Card
+                className="hover-elevate cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in-up group"
+                style={{ animationDelay: `${i * 40}ms` }}
+                data-testid={`card-conversation-${c._id}`}
+              >
+                <CardContent className="flex items-center gap-4 py-4 px-4">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-sm">
+                    <Bot className="h-5 w-5 text-white" />
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {c.timestamp ? new Date(c.timestamp).toLocaleDateString() : ""}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate" data-testid={`text-convo-pharmacy-${c._id}`}>
+                      {c.pharmacy_name || "MediVoice AI Call"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {c.ai_response?.slice(0, 75) || c.pharmacist_text?.slice(0, 75) || "No content"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {c.timestamp ? new Date(c.timestamp).toLocaleString() : "—"}
+                    </p>
                   </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </CardContent>
               </Card>
             </Link>
@@ -85,20 +103,24 @@ export default function PharmacyConversations() {
       )}
 
       {data?.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-2">
+        <div className="flex items-center justify-center gap-3 pt-2 animate-fade-in">
           <button
-            className="text-sm px-3 py-1 border rounded disabled:opacity-50"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-40"
             onClick={() => setPage(p => p - 1)}
             disabled={page === 1}
             data-testid="button-prev-page"
-          >Previous</button>
-          <span className="text-xs text-muted-foreground">Page {data.page} of {data.totalPages}</span>
+          >
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </button>
+          <span className="text-xs text-muted-foreground px-2">Page {data.page} of {data.totalPages}</span>
           <button
-            className="text-sm px-3 py-1 border rounded disabled:opacity-50"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-40"
             onClick={() => setPage(p => p + 1)}
             disabled={page === data.totalPages}
             data-testid="button-next-page"
-          >Next</button>
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       )}
     </div>

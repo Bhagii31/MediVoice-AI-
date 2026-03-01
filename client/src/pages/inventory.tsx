@@ -10,50 +10,59 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Package, Plus, Search, AlertTriangle, MapPin, RefreshCw } from "lucide-react";
+import { Package, Plus, Search, AlertTriangle, MapPin, RefreshCw, Warehouse } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function StockBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; className: string }> = {
-    in_stock: { label: "In Stock", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" },
-    low_stock: { label: "Low Stock", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" },
-    out_of_stock: { label: "Out of Stock", className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" },
-  };
-  const c = config[status] || config.in_stock;
-  return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.className}`}>{c.label}</span>;
-}
+const STOCK_CONFIG = {
+  in_stock:    { label: "In Stock", bg: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500", bar: "bg-emerald-500" },
+  low_stock:   { label: "Low Stock", bg: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400", dot: "bg-amber-500 animate-blink", bar: "bg-amber-500" },
+  out_of_stock: { label: "Out of Stock", bg: "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400", dot: "bg-red-500", bar: "bg-red-500" },
+};
 
-function InventoryRow({ item }: { item: any }) {
+function InventoryRow({ item, index }: { item: any; index: number }) {
+  const cfg = STOCK_CONFIG[item.status as keyof typeof STOCK_CONFIG] || STOCK_CONFIG.in_stock;
+  const fillPct = item.order_limit ? Math.min(100, (item.stock_quantity / (item.order_limit * 10)) * 100) : Math.min(100, (item.stock_quantity / 500) * 100);
+
   return (
-    <div className="flex items-center justify-between py-3 px-4 border-b last:border-0" data-testid={`row-inventory-${item._id}`}>
+    <div
+      className="flex items-center gap-3 py-4 px-4 border-b last:border-0 hover:bg-muted/40 transition-colors animate-fade-in-up group"
+      style={{ animationDelay: `${index * 35}ms` }}
+      data-testid={`row-inventory-${item._id}`}
+    >
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${cfg.bg}`}>
+        <Package className="h-5 w-5" />
+      </div>
+
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-sm" data-testid={`text-inventory-name-${item._id}`}>{item.medicine_name}</p>
-        <div className="flex items-center gap-3 mt-0.5">
+        <p className="font-semibold text-sm" data-testid={`text-inventory-name-${item._id}`}>{item.medicine_name}</p>
+        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
           {item.warehouse_location && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span>{item.warehouse_location}</span>
+              <MapPin className="h-3 w-3" /><span>{item.warehouse_location}</span>
             </div>
           )}
           {item.next_restock_due && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <RefreshCw className="h-3 w-3" />
-              <span>Restock: {item.next_restock_due}</span>
+              <RefreshCw className="h-3 w-3" /><span>Restock: {item.next_restock_due}</span>
             </div>
           )}
         </div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${cfg.bar}`} style={{ width: `${fillPct}%` }} />
+          </div>
+          {item.order_limit && <span className="text-xs text-muted-foreground">Min: {item.order_limit}</span>}
+        </div>
       </div>
-      <div className="flex items-center gap-4 text-sm flex-shrink-0">
+
+      <div className="flex items-center gap-3 flex-shrink-0">
         <div className="text-right">
-          <p className="font-semibold">{item.stock_quantity}</p>
+          <p className="font-bold text-base">{item.stock_quantity}</p>
           <p className="text-xs text-muted-foreground">units</p>
         </div>
-        {item.order_limit && (
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Min order: {item.order_limit}</p>
-          </div>
-        )}
-        <StockBadge status={item.status} />
+        <div className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${cfg.bg}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />{cfg.label}
+        </div>
       </div>
     </div>
   );
@@ -62,16 +71,12 @@ function InventoryRow({ item }: { item: any }) {
 function AddInventoryDialog() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    medicine_id: "", medicine_name: "", stock_quantity: "", warehouse_location: "", order_limit: "", status: "in_stock"
-  });
+  const [form, setForm] = useState({ medicine_id: "", medicine_name: "", stock_quantity: "", warehouse_location: "", order_limit: "", status: "in_stock" });
 
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/inventory", {
-        ...form,
-        stock_quantity: Number(form.stock_quantity),
-        order_limit: form.order_limit ? Number(form.order_limit) : undefined,
+        ...form, stock_quantity: Number(form.stock_quantity), order_limit: form.order_limit ? Number(form.order_limit) : undefined,
       });
       return res.json();
     },
@@ -89,33 +94,18 @@ function AddInventoryDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-inventory"><Plus className="h-4 w-4 mr-2" />Add Item</Button>
+        <Button className="gap-2" data-testid="button-add-inventory"><Plus className="h-4 w-4" />Add Item</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Add Inventory Item</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>Medicine ID</Label>
-            <Input value={form.medicine_id} onChange={set("medicine_id")} placeholder="M001" />
-          </div>
-          <div className="space-y-1">
-            <Label>Medicine Name *</Label>
-            <Input value={form.medicine_name} onChange={set("medicine_name")} placeholder="Paracetamol 500mg" data-testid="input-medicine-name" />
-          </div>
+          <div className="space-y-1"><Label>Medicine ID</Label><Input value={form.medicine_id} onChange={set("medicine_id")} placeholder="M001" /></div>
+          <div className="space-y-1"><Label>Medicine Name *</Label><Input value={form.medicine_name} onChange={set("medicine_name")} placeholder="Paracetamol 500mg" data-testid="input-medicine-name" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Stock Quantity</Label>
-              <Input type="number" value={form.stock_quantity} onChange={set("stock_quantity")} placeholder="250" />
-            </div>
-            <div className="space-y-1">
-              <Label>Order Limit</Label>
-              <Input type="number" value={form.order_limit} onChange={set("order_limit")} placeholder="50" />
-            </div>
+            <div className="space-y-1"><Label>Stock Quantity</Label><Input type="number" value={form.stock_quantity} onChange={set("stock_quantity")} placeholder="250" /></div>
+            <div className="space-y-1"><Label>Order Limit</Label><Input type="number" value={form.order_limit} onChange={set("order_limit")} placeholder="50" /></div>
           </div>
-          <div className="space-y-1">
-            <Label>Warehouse Location</Label>
-            <Input value={form.warehouse_location} onChange={set("warehouse_location")} placeholder="Edison, NJ" />
-          </div>
+          <div className="space-y-1"><Label>Warehouse Location</Label><Input value={form.warehouse_location} onChange={set("warehouse_location")} placeholder="Edison, NJ" /></div>
           <div className="space-y-1">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
@@ -150,20 +140,34 @@ export default function Inventory() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Inventory</h1>
-          <p className="text-muted-foreground text-sm">Dealer warehouse medicine stock levels</p>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Warehouse Inventory</h1>
+          <p className="text-muted-foreground text-sm">Real-time medicine stock levels across dealer warehouses</p>
         </div>
         <AddInventoryDialog />
       </div>
 
+      {!isLoading && allInventory.length > 0 && (
+        <div className="flex gap-3 flex-wrap animate-fade-in">
+          <div className="flex items-center gap-2 text-xs bg-muted text-muted-foreground px-3 py-1.5 rounded-full">
+            <Warehouse className="h-3 w-3" />{allInventory.length} items tracked
+          </div>
+          {lowStock.length > 0 && (
+            <div className="flex items-center gap-2 text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-900/60">
+              <AlertTriangle className="h-3 w-3" />{lowStock.length} need restocking
+            </div>
+          )}
+        </div>
+      )}
+
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All Items</TabsTrigger>
-          <TabsTrigger value="low" className="gap-1">
+          <TabsTrigger value="low" className="gap-1.5">
             <AlertTriangle className="h-3 w-3" />
-            Low Stock {lowStock.length > 0 && <Badge variant="destructive" className="ml-1 text-xs">{lowStock.length}</Badge>}
+            Low Stock
+            {lowStock.length > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">{lowStock.length}</span>}
           </TabsTrigger>
         </TabsList>
 
@@ -172,29 +176,34 @@ export default function Inventory() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input className="pl-9" placeholder="Search by medicine name..." value={search} onChange={e => setSearch(e.target.value)} data-testid="input-search-inventory" />
           </div>
-          <Card>
+          <Card className="border-0 shadow-sm overflow-hidden animate-scale-in">
             {isLoading ? (
-              <CardContent className="p-0"><div className="space-y-px">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-none" />)}</div></CardContent>
+              <CardContent className="p-0">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-none border-b" />)}</CardContent>
             ) : allInventory.length === 0 ? (
               <CardContent className="py-14 text-center">
-                <Package className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">No inventory items found.</p>
+                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+                  <Package className="h-8 w-8 text-muted-foreground opacity-40" />
+                </div>
+                <p className="text-muted-foreground font-medium">No inventory items found.</p>
               </CardContent>
             ) : (
-              <CardContent className="p-0">{allInventory.map((item: any) => <InventoryRow key={item._id} item={item} />)}</CardContent>
+              <CardContent className="p-0">{allInventory.map((item: any, i: number) => <InventoryRow key={item._id} item={item} index={i} />)}</CardContent>
             )}
           </Card>
         </TabsContent>
 
         <TabsContent value="low" className="mt-4">
-          <Card>
+          <Card className="border-0 shadow-sm overflow-hidden animate-scale-in">
             {lowStock.length === 0 ? (
               <CardContent className="py-14 text-center">
-                <Package className="h-10 w-10 mx-auto mb-3 text-green-500 opacity-70" />
-                <p className="text-muted-foreground">All stock levels are healthy.</p>
+                <div className="h-16 w-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center mx-auto mb-3">
+                  <Package className="h-8 w-8 text-emerald-500" />
+                </div>
+                <p className="text-muted-foreground font-medium">All stock levels are healthy!</p>
+                <p className="text-xs text-muted-foreground mt-1">No items need immediate restocking.</p>
               </CardContent>
             ) : (
-              <CardContent className="p-0">{lowStock.map((item: any) => <InventoryRow key={item._id} item={item} />)}</CardContent>
+              <CardContent className="p-0">{lowStock.map((item: any, i: number) => <InventoryRow key={item._id} item={item} index={i} />)}</CardContent>
             )}
           </Card>
         </TabsContent>

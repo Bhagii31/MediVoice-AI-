@@ -3,36 +3,41 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { MessageSquare, Search, Building2, ArrowRight, Mic } from "lucide-react";
+import { MessageSquare, Search, ArrowRight, Mic, ChevronLeft, ChevronRight, Phone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function ConversationCard({ convo }: { convo: any }) {
+function ConversationCard({ convo, index }: { convo: any; index: number }) {
   const date = convo.timestamp ? new Date(convo.timestamp) : null;
+  const snippet = convo.ai_response?.slice(0, 80) || convo.pharmacist_text?.slice(0, 80) || "No content available";
+
   return (
     <Link href={`/conversations/${convo._id}`}>
-      <Card className="hover-elevate cursor-pointer" data-testid={`card-conversation-${convo._id}`}>
-        <CardContent className="flex items-center justify-between py-4 px-4 gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-md bg-violet-100 dark:bg-violet-900 flex items-center justify-center flex-shrink-0">
-              <Mic className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-medium text-sm truncate" data-testid={`text-convo-pharmacy-${convo._id}`}>
-                {convo.pharmacy_name || convo.pharmacy || "Unknown Pharmacy"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {date ? date.toLocaleString() : "—"}
-              </p>
-            </div>
+      <Card
+        className="hover-elevate cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in-up group"
+        style={{ animationDelay: `${index * 40}ms` }}
+        data-testid={`card-conversation-${convo._id}`}
+      >
+        <CardContent className="flex items-center gap-4 py-4 px-4">
+          <div className="h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+            <Mic className="h-5 w-5 text-violet-600 dark:text-violet-400" />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {convo.type && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${convo.type === "inbound" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"}`}>
-                {convo.type}
-              </span>
-            )}
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm" data-testid={`text-convo-pharmacy-${convo._id}`}>
+                {convo.pharmacy_name || "Unknown Pharmacy"}
+              </p>
+              {convo.type && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${convo.type === "inbound" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"}`}>
+                  {convo.type}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{snippet}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {date ? date.toLocaleString() : "—"}
+            </p>
           </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
         </CardContent>
       </Card>
     </Link>
@@ -57,12 +62,24 @@ export default function Conversations() {
 
   return (
     <div className="p-6 space-y-5">
-      <div>
+      <div className="animate-fade-in-down">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-2 w-2 rounded-full bg-violet-500" />
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Call Logs</span>
+        </div>
         <h1 className="text-2xl font-bold" data-testid="text-page-title">Conversations</h1>
-        <p className="text-muted-foreground text-sm">AI voice call recordings from pharmacies</p>
+        <p className="text-muted-foreground text-sm">AI voice call recordings from pharmacies — stored in MongoDB Atlas</p>
       </div>
 
-      <div className="relative max-w-sm">
+      {!isLoading && data?.total > 0 && (
+        <div className="flex items-center gap-3 flex-wrap animate-fade-in">
+          <div className="flex items-center gap-2 text-xs bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 px-3 py-1.5 rounded-full border border-violet-200 dark:border-violet-900/60">
+            <Phone className="h-3 w-3" />{data.total} total calls
+          </div>
+        </div>
+      )}
+
+      <div className="relative max-w-sm animate-fade-in">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9"
@@ -75,39 +92,44 @@ export default function Conversations() {
 
       {isLoading ? (
         <div className="space-y-2">
-          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-md" />)}
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
         </div>
       ) : conversations.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 text-center">
-            <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">No conversations found.</p>
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <MessageSquare className="h-8 w-8 text-muted-foreground opacity-40" />
+            </div>
+            <p className="text-muted-foreground font-medium">No conversations found.</p>
+            {search && <p className="text-xs text-muted-foreground mt-1">Try a different pharmacy name.</p>}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {conversations.map((c: any) => <ConversationCard key={c._id} convo={c} />)}
+          {conversations.map((c: any, i: number) => <ConversationCard key={c._id} convo={c} index={i} />)}
         </div>
       )}
 
       {data?.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-2">
+        <div className="flex items-center justify-center gap-3 pt-2 animate-fade-in">
           <button
-            className="text-sm px-3 py-1 border rounded disabled:opacity-50"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-40"
             onClick={() => setPage(p => p - 1)}
             disabled={page === 1}
             data-testid="button-prev-page"
           >
-            Previous
+            <ChevronLeft className="h-4 w-4" /> Previous
           </button>
-          <span className="text-xs text-muted-foreground">Page {data.page} of {data.totalPages} · {data.total} total</span>
+          <span className="text-xs text-muted-foreground px-2">
+            Page {data.page} of {data.totalPages} · {data.total} calls
+          </span>
           <button
-            className="text-sm px-3 py-1 border rounded disabled:opacity-50"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-40"
             onClick={() => setPage(p => p + 1)}
             disabled={page === data.totalPages}
             data-testid="button-next-page"
           >
-            Next
+            Next <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       )}

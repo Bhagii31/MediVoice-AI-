@@ -7,71 +7,84 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Tag, Plus, Percent, Calendar, Users, Megaphone, Pill } from "lucide-react";
+import { Tag, Plus, Percent, Calendar, Users, Megaphone, Pill, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const STATUS_COLORS: Record<string, string> = {
-  Active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  Scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  Expired: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+const STATUS_CONFIG: Record<string, { bg: string; dot: string; text: string }> = {
+  Active:    { bg: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900", dot: "bg-emerald-500 animate-blink", text: "Active" },
+  Scheduled: { bg: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900", dot: "bg-blue-500", text: "Scheduled" },
+  Expired:   { bg: "bg-muted text-muted-foreground border border-border", dot: "bg-gray-400", text: "Expired" },
 };
 
-function OfferCard({ offer }: { offer: any }) {
+const TIER_COLORS: Record<string, string> = {
+  Gold:   "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400",
+  Silver: "bg-slate-100 dark:bg-slate-900/50 text-slate-700 dark:text-slate-400",
+  Bronze: "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400",
+};
+
+function OfferCard({ offer, index }: { offer: any; index: number }) {
   const isExpired = offer.valid_to && new Date(offer.valid_to) < new Date();
-  const displayStatus = isExpired ? "Expired" : (offer.status || "Active");
+  const status = isExpired ? "Expired" : (offer.status || "Active");
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.Active;
 
   return (
-    <Card className="hover-elevate" data-testid={`card-offer-${offer._id}`}>
+    <Card
+      className="hover-elevate border-0 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden animate-fade-in-up group"
+      style={{ animationDelay: `${index * 60}ms` }}
+      data-testid={`card-offer-${offer._id}`}
+    >
+      <div className={`h-1.5 w-full ${status === "Active" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : status === "Scheduled" ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-muted"}`} />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-md bg-orange-100 dark:bg-orange-900 flex items-center justify-center flex-shrink-0">
-              <Tag className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${status === "Active" ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-muted"}`}>
+              <Tag className={`h-5 w-5 ${status === "Active" ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`} />
             </div>
-            <div>
-              <p className="font-semibold text-sm" data-testid={`text-offer-name-${offer._id}`}>{offer.offer_name}</p>
+            <div className="min-w-0">
+              <p className="font-semibold text-sm truncate" data-testid={`text-offer-name-${offer._id}`}>{offer.offer_name}</p>
               {offer.target_group && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="h-3 w-3" />
-                  <span>{offer.target_group} tier</span>
-                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 inline-block ${TIER_COLORS[offer.target_group] || "bg-muted text-muted-foreground"}`}>
+                  {offer.target_group} tier
+                </span>
               )}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
             {offer.discount_percent && (
-              <div className="flex items-center gap-0.5 text-green-700 dark:text-green-400 font-bold text-xl">
-                <Percent className="h-4 w-4" />{offer.discount_percent}
+              <div className="flex items-center gap-0.5 text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                {offer.discount_percent}<Percent className="h-4 w-4 mt-1.5" />
               </div>
             )}
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[displayStatus] || "bg-muted text-muted-foreground"}`}>
-              {displayStatus}
-            </span>
+            <div className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.bg}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+              {cfg.text}
+            </div>
           </div>
         </div>
 
-        {offer.description && <p className="text-xs text-muted-foreground">{offer.description}</p>}
+        {offer.description && <p className="text-xs text-muted-foreground leading-relaxed">{offer.description}</p>}
 
         {offer.applicable_medicines?.length > 0 && (
-          <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-            <Pill className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+            <Pill className="h-3 w-3 mt-0.5 flex-shrink-0 text-emerald-500" />
             <span className="line-clamp-1">{offer.applicable_medicines.join(", ")}</span>
           </div>
         )}
 
-        {offer.promotion_channel?.length > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Megaphone className="h-3 w-3" />
-            <span>{offer.promotion_channel.join(", ")}</span>
-          </div>
-        )}
-
-        {(offer.valid_from || offer.valid_to) && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span>{offer.valid_from} → {offer.valid_to}</span>
-          </div>
-        )}
+        <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-border">
+          {offer.promotion_channel?.length > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Megaphone className="h-3 w-3" />
+              <span>{offer.promotion_channel.join(", ")}</span>
+            </div>
+          )}
+          {(offer.valid_from || offer.valid_to) && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+              <Calendar className="h-3 w-3" />
+              <span>{offer.valid_from} → {offer.valid_to}</span>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -109,7 +122,9 @@ function AddOfferDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-offer"><Plus className="h-4 w-4 mr-2" />Add Offer</Button>
+        <Button className="gap-2" data-testid="button-add-offer">
+          <Plus className="h-4 w-4" />Add Offer
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Create New Offer</DialogTitle></DialogHeader>
@@ -143,7 +158,7 @@ function AddOfferDialog() {
             </div>
           </div>
           <div className="space-y-1">
-            <Label>Applicable Medicines (comma-separated IDs)</Label>
+            <Label>Applicable Medicines (comma-separated)</Label>
             <Input value={form.applicable_medicines} onChange={set("applicable_medicines")} placeholder="M001, M002, M003" />
           </div>
           <div className="space-y-1">
@@ -161,31 +176,46 @@ function AddOfferDialog() {
 
 export default function Offers() {
   const { data: offers = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/offers"] });
+  const active = offers.filter((o: any) => o.status === "Active" && !(o.valid_to && new Date(o.valid_to) < new Date())).length;
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-in-down">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Offers</h1>
-          <p className="text-muted-foreground text-sm">Medicine promotions discussed during AI calls</p>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Offers & Promotions</h1>
+          <p className="text-muted-foreground text-sm">Medicine promotions discussed during MediVoice AI calls</p>
         </div>
         <AddOfferDialog />
       </div>
 
+      {!isLoading && offers.length > 0 && (
+        <div className="flex gap-3 flex-wrap animate-fade-in">
+          <div className="flex items-center gap-2 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-900/60">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-blink" />
+            <Zap className="h-3 w-3" />{active} active offers
+          </div>
+          <div className="flex items-center gap-2 text-xs bg-muted text-muted-foreground px-3 py-1.5 rounded-full">
+            {offers.length} total
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-44 rounded-md" />)}
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
         </div>
       ) : offers.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="py-16 text-center">
-            <Tag className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">No offers found in the database.</p>
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <Tag className="h-8 w-8 text-muted-foreground opacity-40" />
+            </div>
+            <p className="text-muted-foreground font-medium">No offers found in the database.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {offers.map((o: any) => <OfferCard key={o._id} offer={o} />)}
+          {offers.map((o: any, i: number) => <OfferCard key={o._id} offer={o} index={i} />)}
         </div>
       )}
     </div>
