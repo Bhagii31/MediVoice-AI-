@@ -1,28 +1,32 @@
 import { useLocation, Link } from "wouter";
-import { LayoutDashboard, Building2, MessageSquare, Pill, ClipboardList, Phone, User, LogOut, Zap } from "lucide-react";
+import { LayoutDashboard, Building2, MessageSquare, Pill, ClipboardList, Phone, FileText, LogOut, Zap, ChevronRight } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
   SidebarMenuItem, SidebarFooter,
 } from "@/components/ui/sidebar";
+import { usePharmacyContext } from "@/lib/pharmacy-context";
 
 const navItems = [
   { label: "Overview", items: [
     { title: "Dashboard", url: "/pharmacy", icon: LayoutDashboard, exact: true },
-    { title: "My Profile", url: "/pharmacy/profile", icon: User },
+  ]},
+  { label: "Orders & Finance", items: [
+    { title: "My Orders", url: "/pharmacy/orders", icon: ClipboardList },
+    { title: "Invoices", url: "/pharmacy/invoices", icon: FileText },
   ]},
   { label: "Medicines", items: [
     { title: "Browse Catalogue", url: "/pharmacy/catalogue", icon: Pill },
-    { title: "My Orders", url: "/pharmacy/orders", icon: ClipboardList },
   ]},
   { label: "MediVoice AI", items: [
-    { title: "Call AI Assistant", url: "/pharmacy/voice", icon: Phone },
+    { title: "Call Bot", url: "/pharmacy/voice", icon: Phone, highlight: true },
     { title: "Call History", url: "/pharmacy/conversations", icon: MessageSquare },
   ]},
 ];
 
 export function PharmacistSidebar() {
   const [location] = useLocation();
+  const { pharmacyName, clearPharmacy } = usePharmacyContext();
 
   return (
     <Sidebar>
@@ -34,11 +38,22 @@ export function PharmacistSidebar() {
             </div>
             <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-background animate-blink" />
           </div>
-          <div>
-            <p className="font-bold text-sm leading-tight">Pharmacist Portal</p>
+          <div className="min-w-0">
+            <p className="font-bold text-sm leading-tight truncate">
+              {pharmacyName || "Pharmacist Portal"}
+            </p>
             <p className="text-xs text-muted-foreground">MediVoice AI</p>
           </div>
         </div>
+        {pharmacyName && (
+          <button
+            onClick={clearPharmacy}
+            className="mt-2 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors px-1"
+            data-testid="button-switch-pharmacy"
+          >
+            <ChevronRight className="h-3 w-3" /> Switch pharmacy
+          </button>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="py-2">
@@ -49,9 +64,9 @@ export function PharmacistSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item, ii) => {
+                {group.items.map((item: any, ii) => {
                   const isActive = item.exact ? location === item.url : location.startsWith(item.url);
-                  const isVoice = item.url === "/pharmacy/voice";
+                  const isHighlight = item.highlight;
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
@@ -70,20 +85,20 @@ export function PharmacistSidebar() {
                           )}
                           <div className={`p-1.5 rounded-lg transition-colors ${
                             isActive ? "bg-emerald-100 dark:bg-emerald-900/60" :
-                            isVoice ? "bg-emerald-50 dark:bg-emerald-950/40 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/40" :
+                            isHighlight ? "bg-emerald-50 dark:bg-emerald-950/40 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/40" :
                             "bg-transparent group-hover:bg-muted"
                           }`}>
                             <item.icon className={`h-3.5 w-3.5 ${
                               isActive ? "text-emerald-600 dark:text-emerald-400" :
-                              isVoice ? "text-emerald-500" :
+                              isHighlight ? "text-emerald-500" :
                               "text-muted-foreground"
                             }`} />
                           </div>
                           <span className={`font-medium ${
                             isActive ? "text-emerald-700 dark:text-emerald-300" :
-                            isVoice ? "text-emerald-600 dark:text-emerald-400 font-semibold" : ""
+                            isHighlight ? "text-emerald-600 dark:text-emerald-400 font-semibold" : ""
                           }`}>{item.title}</span>
-                          {isVoice && !isActive && (
+                          {isHighlight && !isActive && (
                             <div className="ml-auto flex items-center gap-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-blink" />
                             </div>
@@ -106,7 +121,7 @@ export function PharmacistSidebar() {
             <Zap className="h-3 w-3 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">AI Connected</p>
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">AI Call Bot</p>
             <p className="text-xs text-muted-foreground truncate">OpenAI + Twilio</p>
           </div>
           <div className="h-2 w-2 rounded-full bg-emerald-400 animate-blink flex-shrink-0" />

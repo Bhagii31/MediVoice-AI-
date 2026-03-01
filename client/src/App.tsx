@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DealerSidebar } from "@/components/dealer-sidebar";
 import { PharmacistSidebar } from "@/components/pharmacist-sidebar";
 import { ThemeProvider, ThemeToggle } from "@/components/theme-provider";
+import { PharmacyProvider, usePharmacyContext } from "@/lib/pharmacy-context";
 
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
@@ -27,6 +28,8 @@ import PharmacyCatalogue from "@/pages/pharmacy/catalogue";
 import PharmacyOrders from "@/pages/pharmacy/orders";
 import PharmacyVoice from "@/pages/pharmacy/voice";
 import PharmacyConversations from "@/pages/pharmacy/conversations";
+import PharmacyInvoices from "@/pages/pharmacy/invoices";
+import PharmacySelector from "@/pages/pharmacy/selector";
 
 function DealerRouter() {
   return (
@@ -51,6 +54,7 @@ function PharmacyRouter() {
       <Route path="/pharmacy/profile" component={PharmacyProfile} />
       <Route path="/pharmacy/catalogue" component={PharmacyCatalogue} />
       <Route path="/pharmacy/orders" component={PharmacyOrders} />
+      <Route path="/pharmacy/invoices" component={PharmacyInvoices} />
       <Route path="/pharmacy/voice" component={PharmacyVoice} />
       <Route path="/pharmacy/conversations" component={PharmacyConversations} />
       <Route path="/pharmacy/conversations/:id" component={ConversationDetail} />
@@ -88,11 +92,17 @@ function DealerLayout() {
   );
 }
 
-function PharmacyLayout() {
+function PharmacyLayoutInner() {
+  const { pharmacyId } = usePharmacyContext();
   const sidebarStyle = {
     "--sidebar-width": "17rem",
     "--sidebar-width-icon": "3.5rem",
   };
+
+  if (!pharmacyId) {
+    return <PharmacySelector />;
+  }
+
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full overflow-hidden">
@@ -114,6 +124,14 @@ function PharmacyLayout() {
         </div>
       </div>
     </SidebarProvider>
+  );
+}
+
+function PharmacyLayout() {
+  return (
+    <PharmacyProvider>
+      <PharmacyLayoutInner />
+    </PharmacyProvider>
   );
 }
 
