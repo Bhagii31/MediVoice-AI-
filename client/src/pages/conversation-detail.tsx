@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Building2, Mic, Bot, User } from "lucide-react";
@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ConversationDetail() {
   const { id } = useParams<{ id: string }>();
+  const [location] = useLocation();
+  const backHref = location.startsWith("/dealer") ? "/dealer/conversations" : location.startsWith("/pharmacy") ? "/pharmacy/conversations" : "/conversations";
   const { data: conversation, isLoading } = useQuery<any>({ queryKey: [`/api/conversations/${id}`] });
 
   if (isLoading) return (
@@ -27,7 +29,7 @@ export default function ConversationDetail() {
   return (
     <div className="p-6 space-y-5 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/conversations">
+        <Link href={backHref}>
           <Button variant="ghost" size="icon" data-testid="button-back"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <div>

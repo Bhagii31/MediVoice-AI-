@@ -2,14 +2,24 @@
 
 ## Overview
 
-MediVoice AI is a pharmacy intelligence platform that connects pharmacies and medicine dealers. It manages pharmacy and dealer registrations, tracks medicine inventory, handles stock requests, records AI-assisted voice conversations, and surfaces promotional offers. The system includes an AI integration layer (OpenAI) for voice and chat capabilities.
+MediVoice AI is a pharmacy intelligence platform split into **two separate portals** accessible from a landing page. It connects pharmacies and medicine dealers, handles AI-powered voice conversations, tracks orders, and manages inventory.
+
+### Portal Architecture
+- **Landing page** (`/`) — Portal selection screen with two cards
+- **Dealer Portal** (`/dealer/*`) — For medicine dealers/distributors
+  - Manage pharmacies, medicine catalogue, warehouse inventory, orders, offers
+  - View all AI call logs
+- **Pharmacist Portal** (`/pharmacy/*`) — For pharmacy staff
+  - View pharmacy profile, browse medicine catalogue, track orders
+  - Chat with MediVoice AI assistant in real-time
+  - View personal call history
 
 Key features:
-- Dashboard with live stats (pharmacies, dealers, low stock, pending orders)
-- Pharmacist portal (manage pharmacies, inventory)
-- Dealer portal (manage dealers, offers)
-- Conversation tracking with AI-powered summaries
-- Stock request lifecycle management (pending → confirmed → dispatched → delivered)
+- Landing page with portal selector
+- Separate sidebars, layouts, and navigation per portal
+- AI voice chat interface for pharmacists (text-based with OpenAI)
+- Real MongoDB Atlas data across all pages
+- Outbound call flow via Twilio + Raspberry Pi keyword detection
 
 ## User Preferences
 
