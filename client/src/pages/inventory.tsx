@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,17 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Package, Plus, Search, AlertTriangle } from "lucide-react";
+import { Package, Plus, Search, AlertTriangle, MapPin, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function StockBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    normal: { label: "Normal", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" },
-    low: { label: "Low", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" },
-    critical: { label: "Critical", className: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300" },
+    in_stock: { label: "In Stock", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" },
+    low_stock: { label: "Low Stock", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" },
     out_of_stock: { label: "Out of Stock", className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" },
   };
-  const c = config[status] || config.normal;
+  const c = config[status] || config.in_stock;
   return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.className}`}>{c.label}</span>;
 }
 
@@ -28,34 +27,51 @@ function InventoryRow({ item }: { item: any }) {
   return (
     <div className="flex items-center justify-between py-3 px-4 border-b last:border-0" data-testid={`row-inventory-${item._id}`}>
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-sm">{item.medicineName}</p>
-        <p className="text-xs text-muted-foreground">{item.pharmacyId?.name || "—"} · {item.pharmacyId?.city || ""}</p>
+        <p className="font-medium text-sm" data-testid={`text-inventory-name-${item._id}`}>{item.medicine_name}</p>
+        <div className="flex items-center gap-3 mt-0.5">
+          {item.warehouse_location && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              <span>{item.warehouse_location}</span>
+            </div>
+          )}
+          {item.next_restock_due && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3" />
+              <span>Restock: {item.next_restock_due}</span>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-4 text-sm flex-shrink-0">
         <div className="text-right">
-          <p className="font-semibold">{item.currentStock}</p>
-          <p className="text-xs text-muted-foreground">{item.unit}</p>
+          <p className="font-semibold">{item.stock_quantity}</p>
+          <p className="text-xs text-muted-foreground">units</p>
         </div>
-        <div className="text-right">
-          <p className="text-muted-foreground text-xs">Min: {item.minimumStock}</p>
-        </div>
+        {item.order_limit && (
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Min order: {item.order_limit}</p>
+          </div>
+        )}
         <StockBadge status={item.status} />
       </div>
     </div>
   );
 }
 
-function AddInventoryDialog({ pharmacies }: { pharmacies: any[] }) {
+function AddInventoryDialog() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ pharmacyId: "", medicineName: "", currentStock: "", minimumStock: "10", unit: "strips", status: "normal" });
+  const [form, setForm] = useState({
+    medicine_id: "", medicine_name: "", stock_quantity: "", warehouse_location: "", order_limit: "", status: "in_stock"
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/inventory", {
         ...form,
-        currentStock: Number(form.currentStock),
-        minimumStock: Number(form.minimumStock),
+        stock_quantity: Number(form.stock_quantity),
+        order_limit: form.order_limit ? Number(form.order_limit) : undefined,
       });
       return res.json();
     },
@@ -63,6 +79,7 @@ function AddInventoryDialog({ pharmacies }: { pharmacies: any[] }) {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       toast({ title: "Inventory item added" });
       setOpen(false);
+      setForm({ medicine_id: "", medicine_name: "", stock_quantity: "", warehouse_location: "", order_limit: "", status: "in_stock" });
     },
     onError: () => toast({ title: "Failed to add item", variant: "destructive" }),
   });
@@ -78,57 +95,40 @@ function AddInventoryDialog({ pharmacies }: { pharmacies: any[] }) {
         <DialogHeader><DialogTitle>Add Inventory Item</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label>Pharmacy</Label>
-            <Select value={form.pharmacyId} onValueChange={v => setForm(f => ({ ...f, pharmacyId: v }))}>
-              <SelectTrigger data-testid="select-pharmacy"><SelectValue placeholder="Select pharmacy" /></SelectTrigger>
+            <Label>Medicine ID</Label>
+            <Input value={form.medicine_id} onChange={set("medicine_id")} placeholder="M001" />
+          </div>
+          <div className="space-y-1">
+            <Label>Medicine Name *</Label>
+            <Input value={form.medicine_name} onChange={set("medicine_name")} placeholder="Paracetamol 500mg" data-testid="input-medicine-name" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Stock Quantity</Label>
+              <Input type="number" value={form.stock_quantity} onChange={set("stock_quantity")} placeholder="250" />
+            </div>
+            <div className="space-y-1">
+              <Label>Order Limit</Label>
+              <Input type="number" value={form.order_limit} onChange={set("order_limit")} placeholder="50" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Warehouse Location</Label>
+            <Input value={form.warehouse_location} onChange={set("warehouse_location")} placeholder="Edison, NJ" />
+          </div>
+          <div className="space-y-1">
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+              <SelectTrigger data-testid="select-inventory-status"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {pharmacies.map((p: any) => <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>)}
+                <SelectItem value="in_stock">In Stock</SelectItem>
+                <SelectItem value="low_stock">Low Stock</SelectItem>
+                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label>Medicine Name</Label>
-            <Input value={form.medicineName} onChange={set("medicineName")} placeholder="Paracetamol 500mg" data-testid="input-medicine-name" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Current Stock</Label>
-              <Input type="number" value={form.currentStock} onChange={set("currentStock")} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label>Minimum Stock</Label>
-              <Input type="number" value={form.minimumStock} onChange={set("minimumStock")} placeholder="10" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Unit</Label>
-              <Select value={form.unit} onValueChange={v => setForm(f => ({ ...f, unit: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="strips">Strips</SelectItem>
-                  <SelectItem value="tablets">Tablets</SelectItem>
-                  <SelectItem value="bottles">Bottles</SelectItem>
-                  <SelectItem value="vials">Vials</SelectItem>
-                  <SelectItem value="boxes">Boxes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
         </div>
-        <Button onClick={() => mutation.mutate()} disabled={!form.pharmacyId || !form.medicineName || mutation.isPending} className="w-full" data-testid="button-save-inventory">
+        <Button onClick={() => mutation.mutate()} disabled={!form.medicine_name || mutation.isPending} className="w-full" data-testid="button-save-inventory">
           {mutation.isPending ? "Saving..." : "Save"}
         </Button>
       </DialogContent>
@@ -138,23 +138,24 @@ function AddInventoryDialog({ pharmacies }: { pharmacies: any[] }) {
 
 export default function Inventory() {
   const [search, setSearch] = useState("");
-  const { data: allInventory = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/inventory"] });
+  const { data: allInventory = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/inventory", search],
+    queryFn: async () => {
+      const params = search ? `?search=${encodeURIComponent(search)}` : "";
+      const res = await fetch(`/api/inventory${params}`);
+      return res.json();
+    }
+  });
   const { data: lowStock = [] } = useQuery<any[]>({ queryKey: ["/api/inventory/low-stock"] });
-  const { data: pharmacies = [] } = useQuery<any[]>({ queryKey: ["/api/pharmacies"] });
-
-  const filtered = allInventory.filter((item: any) =>
-    item.medicineName?.toLowerCase().includes(search.toLowerCase()) ||
-    item.pharmacyId?.name?.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Inventory</h1>
-          <p className="text-muted-foreground text-sm">Track medicine stock across all pharmacies</p>
+          <p className="text-muted-foreground text-sm">Dealer warehouse medicine stock levels</p>
         </div>
-        <AddInventoryDialog pharmacies={pharmacies} />
+        <AddInventoryDialog />
       </div>
 
       <Tabs defaultValue="all">
@@ -169,18 +170,18 @@ export default function Inventory() {
         <TabsContent value="all" className="mt-4 space-y-3">
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search medicine or pharmacy..." value={search} onChange={e => setSearch(e.target.value)} data-testid="input-search-inventory" />
+            <Input className="pl-9" placeholder="Search by medicine name..." value={search} onChange={e => setSearch(e.target.value)} data-testid="input-search-inventory" />
           </div>
           <Card>
             {isLoading ? (
-              <CardContent className="p-0"><div className="space-y-px">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-none" />)}</div></CardContent>
-            ) : filtered.length === 0 ? (
+              <CardContent className="p-0"><div className="space-y-px">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-none" />)}</div></CardContent>
+            ) : allInventory.length === 0 ? (
               <CardContent className="py-14 text-center">
                 <Package className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
                 <p className="text-muted-foreground">No inventory items found.</p>
               </CardContent>
             ) : (
-              <CardContent className="p-0 divide-y">{filtered.map((item: any) => <InventoryRow key={item._id} item={item} />)}</CardContent>
+              <CardContent className="p-0">{allInventory.map((item: any) => <InventoryRow key={item._id} item={item} />)}</CardContent>
             )}
           </Card>
         </TabsContent>
@@ -193,7 +194,7 @@ export default function Inventory() {
                 <p className="text-muted-foreground">All stock levels are healthy.</p>
               </CardContent>
             ) : (
-              <CardContent className="p-0 divide-y">{lowStock.map((item: any) => <InventoryRow key={item._id} item={item} />)}</CardContent>
+              <CardContent className="p-0">{lowStock.map((item: any) => <InventoryRow key={item._id} item={item} />)}</CardContent>
             )}
           </Card>
         </TabsContent>

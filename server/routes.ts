@@ -8,6 +8,8 @@ import { Inventory } from "./models/Inventory";
 import { Conversation } from "./models/Conversation";
 import { StockRequest } from "./models/StockRequest";
 import { Offer } from "./models/Offer";
+import { Personalization } from "./models/Personalization";
+import { Schedule } from "./models/Schedule";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -34,34 +36,67 @@ export async function registerRoutes(
     res.json({ status: "ok", mongoConnected: isMongoConnected() });
   });
 
+  // ─── DEBUG: LIST COLLECTIONS ─────────────────────────────────────
+  app.get("/api/debug/collections", async (_req, res) => {
+    if (!isMongoConnected()) return res.status(503).json({ error: "Not connected" });
+    try {
+      const { mongoose } = await import("./db/mongoose");
+      const collections = await mongoose.connection.db!.listCollections().toArray();
+      const result: Record<string, number> = {};
+      for (const col of collections) {
+        const count = await mongoose.connection.db!.collection(col.name).countDocuments();
+        result[col.name] = count;
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/debug/sample", async (req, res) => {
+    if (!isMongoConnected()) return res.status(503).json({ error: "Not connected" });
+    const col = req.query.col as string;
+    if (!col) return res.status(400).json({ error: "col param required" });
+    try {
+      const { mongoose } = await import("./db/mongoose");
+      const docs = await mongoose.connection.db!.collection(col).find({}).limit(2).toArray();
+      res.json(docs);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ─── DASHBOARD STATS ───────────────────────────────────────────────
   app.get("/api/stats", async (req, res) => {
     if (!isMongoConnected()) {
       return res.json({ pharmacies: 0, dealers: 0, conversations: 0, pendingOrders: 0, lowStock: 0, recentCalls: [] });
     }
     try {
-      const [pharmacies, dealers, conversations, stockRequests] = await Promise.all([
-        Pharmacy.countDocuments({ isActive: true }),
-        Dealer.countDocuments({ isActive: true }),
-        Conversation.countDocuments(),
-        StockRequest.countDocuments({ status: "pending" }),
+      const [pharmacies, dealers, conversations, pendingOrders] = await Promise.all([
+        Pharmacy.countDocuments({}),
+        Dealer.countDocuments({}),
+        Conversation.countDocuments({}),
+        StockRequest.countDocuments({ status: "Pending" }),
       ]);
-      const lowStock = await Inventory.countDocuments({ status: { $in: ["low", "critical", "out_of_stock"] } });
-      const recentCalls = await Conversation.find()
-        .sort({ createdAt: -1 })
+      const lowStock = await Inventory.countDocuments({ status: { $in: ["low_stock", "out_of_stock"] } });
+      const recentCalls = await Conversation.find({})
+        .sort({ timestamp: -1 })
         .limit(5)
         .lean();
-      res.json({ pharmacies, dealers, conversations, pendingOrders: stockRequests, lowStock, recentCalls });
+      res.json({ pharmacies, dealers, conversations, pendingOrders, lowStock, recentCalls });
     } catch (err) {
+      console.error("Stats error:", err);
       res.status(500).json({ error: "Failed to fetch stats" });
     }
   });
 
-  // ─── PHARMACIES ─────────────────────────────────────────────────────
+  // ─── PHARMACIES (collection: pharmacists) ───────────────────────────
   app.get("/api/pharmacies", async (req, res) => {
     if (!isMongoConnected()) return res.json([]);
     try {
-      const pharmacies = await Pharmacy.find().populate("dealerId").sort({ createdAt: -1 }).lean();
+      const { search } = req.query;
+      const filter: any = search ? { $or: [{ name: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }] } : {};
+      const pharmacies = await Pharmacy.find(filter).sort({ name: 1 }).lean();
       res.json(pharmacies);
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch pharmacies" });
@@ -71,7 +106,7 @@ export async function registerRoutes(
   app.get("/api/pharmacies/:id", async (req, res) => {
     if (!requireMongo(res)) return;
     try {
-      const pharmacy = await Pharmacy.findById(req.params.id).populate("dealerId").lean();
+      const pharmacy = await Pharmacy.findById(req.params.id).lean();
       if (!pharmacy) return res.status(404).json({ error: "Pharmacy not found" });
       res.json(pharmacy);
     } catch (err) {
@@ -145,11 +180,15 @@ export async function registerRoutes(
     }
   });
 
-  // ─── MEDICINES ──────────────────────────────────────────────────────
+  // ─── MEDICINES (collection: Medicines) ──────────────────────────────
   app.get("/api/medicines", async (req, res) => {
     if (!isMongoConnected()) return res.json([]);
     try {
-      const medicines = await Medicine.find({ isActive: true }).sort({ name: 1 }).lean();
+      const { search, category } = req.query;
+      const filter: any = {};
+      if (search) filter.name = { $regex: search, $options: "i" };
+      if (category) filter.category = category;
+      const medicines = await Medicine.find(filter).sort({ name: 1 }).lean();
       res.json(medicines);
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch medicines" });
@@ -178,17 +217,15 @@ export async function registerRoutes(
     }
   });
 
-  // ─── INVENTORY ──────────────────────────────────────────────────────
+  // ─── INVENTORY (collection: Inventory — dealer warehouse stock) ──────
   app.get("/api/inventory", async (req, res) => {
     if (!isMongoConnected()) return res.json([]);
     try {
-      const { pharmacyId } = req.query;
-      const filter = pharmacyId ? { pharmacyId } : {};
-      const inventory = await Inventory.find(filter)
-        .populate("pharmacyId", "name phone city")
-        .populate("medicineId", "name manufacturer")
-        .sort({ status: 1, medicineName: 1 })
-        .lean();
+      const { search, status } = req.query;
+      const filter: any = {};
+      if (search) filter.medicine_name = { $regex: search, $options: "i" };
+      if (status) filter.status = status;
+      const inventory = await Inventory.find(filter).sort({ medicine_name: 1 }).lean();
       res.json(inventory);
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch inventory" });
@@ -198,12 +235,8 @@ export async function registerRoutes(
   app.get("/api/inventory/low-stock", async (req, res) => {
     if (!isMongoConnected()) return res.json([]);
     try {
-      const items = await Inventory.find({
-        status: { $in: ["low", "critical", "out_of_stock"] },
-      })
-        .populate("pharmacyId", "name phone city")
-        .populate("medicineId", "name manufacturer")
-        .sort({ status: -1 })
+      const items = await Inventory.find({ status: { $in: ["low_stock", "out_of_stock"] } })
+        .sort({ stock_quantity: 1 })
         .lean();
       res.json(items);
     } catch (err) {
@@ -225,7 +258,7 @@ export async function registerRoutes(
   app.put("/api/inventory/:id", async (req, res) => {
     if (!requireMongo(res)) return;
     try {
-      const item = await Inventory.findByIdAndUpdate(req.params.id, { ...req.body, lastUpdated: new Date() }, { new: true });
+      const item = await Inventory.findByIdAndUpdate(req.params.id, req.body, { new: true });
       if (!item) return res.status(404).json({ error: "Inventory item not found" });
       res.json(item);
     } catch (err) {
@@ -233,22 +266,20 @@ export async function registerRoutes(
     }
   });
 
-  // ─── CONVERSATIONS / CALL LOGS ──────────────────────────────────────
+  // ─── CONVERSATIONS (collection: Live_Conversations) ──────────────────
   app.get("/api/conversations", async (req, res) => {
     if (!isMongoConnected()) return res.json({ conversations: [], total: 0, page: 1, totalPages: 0 });
     try {
-      const { type, pharmacyId, page = 1, limit = 20 } = req.query;
+      const { pharmacy, page = 1, limit = 20 } = req.query;
       const filter: any = {};
-      if (type) filter.type = type;
-      if (pharmacyId) filter.pharmacyId = pharmacyId;
+      if (pharmacy) filter.pharmacy_name = { $regex: pharmacy, $options: "i" };
       const skip = (Number(page) - 1) * Number(limit);
       const [conversations, total] = await Promise.all([
         Conversation.find(filter)
-          .sort({ createdAt: -1 })
+          .sort({ timestamp: -1 })
           .skip(skip)
           .limit(Number(limit))
-          .populate("pharmacyId", "name phone city")
-          .populate("dealerId", "name companyName")
+          .select("-audio_bytes")
           .lean(),
         Conversation.countDocuments(filter),
       ]);
@@ -261,10 +292,7 @@ export async function registerRoutes(
   app.get("/api/conversations/:id", async (req, res) => {
     if (!requireMongo(res)) return;
     try {
-      const conversation = await Conversation.findById(req.params.id)
-        .populate("pharmacyId")
-        .populate("dealerId")
-        .lean();
+      const conversation = await Conversation.findById(req.params.id).select("-audio_bytes").lean();
       if (!conversation) return res.status(404).json({ error: "Conversation not found" });
       res.json(conversation);
     } catch (err) {
@@ -283,39 +311,29 @@ export async function registerRoutes(
     }
   });
 
-  // ─── STOCK REQUESTS / ORDERS ─────────────────────────────────────────
+  // ─── ORDERS (collection: Orders) ─────────────────────────────────────
   app.get("/api/stock-requests", async (req, res) => {
     if (!isMongoConnected()) return res.json([]);
     try {
-      const { status, dealerId, pharmacyId } = req.query;
+      const { status, pharmacist_id } = req.query;
       const filter: any = {};
       if (status) filter.status = status;
-      if (dealerId) filter.dealerId = dealerId;
-      if (pharmacyId) filter.pharmacyId = pharmacyId;
-      const requests = await StockRequest.find(filter)
-        .populate("pharmacyId", "name phone city address")
-        .populate("dealerId", "name companyName phone")
-        .populate("conversationId", "type status createdAt")
-        .sort({ createdAt: -1 })
-        .lean();
+      if (pharmacist_id) filter.pharmacist_id = pharmacist_id;
+      const requests = await StockRequest.find(filter).sort({ order_timestamp: -1 }).lean();
       res.json(requests);
     } catch (err) {
-      res.status(500).json({ error: "Failed to fetch stock requests" });
+      res.status(500).json({ error: "Failed to fetch orders" });
     }
   });
 
   app.get("/api/stock-requests/:id", async (req, res) => {
     if (!requireMongo(res)) return;
     try {
-      const request = await StockRequest.findById(req.params.id)
-        .populate("pharmacyId")
-        .populate("dealerId")
-        .populate("conversationId")
-        .lean();
-      if (!request) return res.status(404).json({ error: "Stock request not found" });
+      const request = await StockRequest.findById(req.params.id).lean();
+      if (!request) return res.status(404).json({ error: "Order not found" });
       res.json(request);
     } catch (err) {
-      res.status(500).json({ error: "Failed to fetch stock request" });
+      res.status(500).json({ error: "Failed to fetch order" });
     }
   });
 
@@ -326,7 +344,7 @@ export async function registerRoutes(
       await request.save();
       res.status(201).json(request);
     } catch (err) {
-      res.status(400).json({ error: "Failed to create stock request" });
+      res.status(400).json({ error: "Failed to create order" });
     }
   });
 
@@ -334,25 +352,21 @@ export async function registerRoutes(
     if (!requireMongo(res)) return;
     try {
       const { status } = req.body;
-      const update: any = { status };
-      if (status === "dispatched") update.dispatchedAt = new Date();
-      if (status === "delivered") update.deliveredAt = new Date();
-      const request = await StockRequest.findByIdAndUpdate(req.params.id, update, { new: true });
-      if (!request) return res.status(404).json({ error: "Stock request not found" });
+      const request = await StockRequest.findByIdAndUpdate(req.params.id, { status }, { new: true });
+      if (!request) return res.status(404).json({ error: "Order not found" });
       res.json(request);
     } catch (err) {
-      res.status(400).json({ error: "Failed to update stock request" });
+      res.status(400).json({ error: "Failed to update order" });
     }
   });
 
-  // ─── OFFERS ──────────────────────────────────────────────────────────
+  // ─── OFFERS (collection: Offers) ─────────────────────────────────────
   app.get("/api/offers", async (req, res) => {
     if (!isMongoConnected()) return res.json([]);
     try {
-      const offers = await Offer.find({ isActive: true })
-        .populate("dealerId", "name companyName")
-        .sort({ createdAt: -1 })
-        .lean();
+      const { status } = req.query;
+      const filter: any = status ? { status } : {};
+      const offers = await Offer.find(filter).sort({ valid_from: -1 }).lean();
       res.json(offers);
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch offers" });
@@ -381,6 +395,56 @@ export async function registerRoutes(
     }
   });
 
+  // ─── PERSONALIZATION ─────────────────────────────────────────────────
+  app.get("/api/personalization", async (req, res) => {
+    if (!isMongoConnected()) return res.json([]);
+    try {
+      const { pharmacist_id } = req.query;
+      const filter = pharmacist_id ? { pharmacist_id } : {};
+      const data = await Personalization.find(filter).lean();
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch personalization data" });
+    }
+  });
+
+  app.get("/api/personalization/:pharmacist_id", async (req, res) => {
+    if (!requireMongo(res)) return;
+    try {
+      const data = await Personalization.findOne({ pharmacist_id: req.params.pharmacist_id }).lean();
+      if (!data) return res.status(404).json({ error: "Personalization not found" });
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch personalization" });
+    }
+  });
+
+  // ─── SCHEDULES ────────────────────────────────────────────────────────
+  app.get("/api/schedules", async (req, res) => {
+    if (!isMongoConnected()) return res.json([]);
+    try {
+      const { pharmacist_id, status } = req.query;
+      const filter: any = {};
+      if (pharmacist_id) filter.pharmacist_id = pharmacist_id;
+      if (status) filter.status = status;
+      const schedules = await Schedule.find(filter).sort({ next_execution: 1 }).lean();
+      res.json(schedules);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch schedules" });
+    }
+  });
+
+  app.post("/api/schedules", async (req, res) => {
+    if (!requireMongo(res)) return;
+    try {
+      const schedule = new Schedule(req.body);
+      await schedule.save();
+      res.status(201).json(schedule);
+    } catch (err) {
+      res.status(400).json({ error: "Failed to create schedule" });
+    }
+  });
+
   // ─── AI CHAT (Inbound call simulation) ──────────────────────────────
   app.post("/api/ai/chat", async (req, res) => {
     try {
@@ -391,8 +455,9 @@ export async function registerRoutes(
         pharmacy = await Pharmacy.findById(pharmacyId).populate("dealerId").lean();
       }
 
+      const p = pharmacy as any;
       const systemPrompt = pharmacy
-        ? `You are MediVoice AI, a friendly and professional pharmacy assistant bot. You are talking to ${pharmacy.name} pharmacy. Owner: ${pharmacy.ownerName || "the pharmacist"}. You help with stock checks, medicine inquiries, and reorder requests. Be concise and helpful. If they mention low stock or reorder needs, ask for specific medicine names and quantities.`
+        ? `You are MediVoice AI, a friendly and professional pharmacy assistant bot. You are talking to ${p.name} pharmacy located in ${p.location || "your area"}. Their discount tier is ${p.discount_tier || "Standard"}. Preferred brands: ${(p.preferred_brands || []).join(", ") || "any"}. You help with stock checks, medicine inquiries, and reorder requests. Be concise and helpful. If they mention low stock or reorder needs, ask for specific medicine names and quantities.`
         : `You are MediVoice AI, a pharmacy assistant bot. Help pharmacists with stock inquiries, medicine availability, and reorder requests. Be concise and friendly.`;
 
       const messages = [
@@ -456,20 +521,16 @@ export async function registerRoutes(
       const { default: twilioLib } = await import("twilio");
       const twilio = twilioLib(twilio_sid, twilio_token);
       const call = await twilio.calls.create({
-        to: pharmacy.phone,
+        to: (pharmacy as any).contact,
         from: twilio_number,
         url: `${req.protocol}://${req.get("host")}/api/twilio/outbound-script?pharmacyId=${pharmacyId}&reason=${encodeURIComponent(reason || "stock check")}`,
       });
 
       const conversation = new Conversation({
+        pharmacy_name: (pharmacy as any).name,
+        timestamp: new Date(),
         type: "outbound",
-        pharmacyId: pharmacy._id,
-        pharmacyName: pharmacy.name,
-        pharmacyPhone: pharmacy.phone,
-        dealerId: pharmacy.dealerId,
-        callSid: call.sid,
         status: "initiated",
-        trigger: reason || "stock check",
       });
       await conversation.save();
 

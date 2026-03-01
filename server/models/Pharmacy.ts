@@ -1,22 +1,15 @@
 import { mongoose } from "../db/mongoose";
 
 const pharmacySchema = new mongoose.Schema({
+  pharmacy_id: { type: String },
   name: { type: String, required: true },
-  phone: { type: String, required: true },
-  address: { type: String },
-  city: { type: String },
-  state: { type: String },
-  pincode: { type: String },
-  licenseNumber: { type: String },
-  ownerName: { type: String },
-  email: { type: String },
-  isActive: { type: Boolean, default: true },
-  dealerId: { type: mongoose.Schema.Types.ObjectId, ref: "Dealer" },
-  personalization: {
-    preferredCallTime: { type: String },
-    language: { type: String, default: "en" },
-    notes: { type: String },
-  },
-}, { timestamps: true });
+  contact: { type: String },
+  location: { type: String },
+  language_preference: { type: String, default: "English" },
+  business_type: { type: String },
+  preferred_brands: [{ type: String }],
+  discount_tier: { type: String, enum: ["Gold", "Silver", "Bronze"], default: "Silver" },
+  last_order_date: { type: String },
+}, { collection: "pharmacists", strict: false });
 
-export const Pharmacy = mongoose.models.Pharmacy || mongoose.model("Pharmacy", pharmacySchema);
+export const Pharmacy = mongoose.models.Pharmacy || mongoose.model("Pharmacy", pharmacySchema, "pharmacists");

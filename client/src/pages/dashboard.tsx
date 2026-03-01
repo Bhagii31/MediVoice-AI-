@@ -102,14 +102,14 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3">
                       <CallTypeBadge type={call.type} />
                       <div>
-                        <p className="font-medium text-sm">{call.pharmacyName || "Unknown Pharmacy"}</p>
-                        <p className="text-xs text-muted-foreground">{call.trigger || "—"}</p>
+                        <p className="font-medium text-sm">{call.pharmacy_name || call.pharmacyName || "Unknown Pharmacy"}</p>
+                        <p className="text-xs text-muted-foreground">{call.ai_response?.slice(0, 60) || call.trigger || "—"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <StatusBadge status={call.status} />
+                      {call.status && <StatusBadge status={call.status} />}
                       <span className="text-xs text-muted-foreground">
-                        {new Date(call.createdAt).toLocaleDateString()}
+                        {new Date(call.timestamp || call.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </CardContent>

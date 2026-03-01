@@ -1,15 +1,16 @@
 import { mongoose } from "../db/mongoose";
 
 const offerSchema = new mongoose.Schema({
-  dealerId: { type: mongoose.Schema.Types.ObjectId, ref: "Dealer", required: true },
-  title: { type: String, required: true },
+  offer_id: { type: String },
+  offer_name: { type: String, required: true },
   description: { type: String },
-  medicineName: { type: String },
-  discountPercent: { type: Number },
-  validFrom: { type: Date, default: Date.now },
-  validUntil: { type: Date },
-  isActive: { type: Boolean, default: true },
-  targetPharmacies: [{ type: mongoose.Schema.Types.ObjectId, ref: "Pharmacy" }],
-}, { timestamps: true });
+  valid_from: { type: String },
+  valid_to: { type: String },
+  applicable_medicines: [{ type: String }],
+  discount_percent: { type: Number },
+  target_group: { type: String },
+  promotion_channel: [{ type: String }],
+  status: { type: String, default: "Active" },
+}, { collection: "Offers", strict: false });
 
-export const Offer = mongoose.models.Offer || mongoose.model("Offer", offerSchema);
+export const Offer = mongoose.models.Offer || mongoose.model("Offer", offerSchema, "Offers");

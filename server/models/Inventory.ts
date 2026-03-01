@@ -1,18 +1,15 @@
 import { mongoose } from "../db/mongoose";
 
 const inventorySchema = new mongoose.Schema({
-  pharmacyId: { type: mongoose.Schema.Types.ObjectId, ref: "Pharmacy", required: true },
-  medicineId: { type: mongoose.Schema.Types.ObjectId, ref: "Medicine", required: true },
-  medicineName: { type: String, required: true },
-  currentStock: { type: Number, default: 0 },
-  minimumStock: { type: Number, default: 10 },
-  unit: { type: String, default: "strips" },
-  lastUpdated: { type: Date, default: Date.now },
-  status: {
-    type: String,
-    enum: ["normal", "low", "critical", "out_of_stock"],
-    default: "normal",
-  },
-}, { timestamps: true });
+  inventory_id: { type: String },
+  medicine_id: { type: String },
+  medicine_name: { type: String },
+  stock_quantity: { type: Number, default: 0 },
+  warehouse_location: { type: String },
+  last_restock_date: { type: String },
+  next_restock_due: { type: String },
+  order_limit: { type: Number },
+  status: { type: String, enum: ["in_stock", "low_stock", "out_of_stock"], default: "in_stock" },
+}, { collection: "Inventory", strict: false });
 
-export const Inventory = mongoose.models.Inventory || mongoose.model("Inventory", inventorySchema);
+export const Inventory = mongoose.models.Inventory || mongoose.model("Inventory", inventorySchema, "Inventory");

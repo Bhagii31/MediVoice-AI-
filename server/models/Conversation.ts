@@ -1,38 +1,15 @@
 import { mongoose } from "../db/mongoose";
 
-const messageSchema = new mongoose.Schema({
-  role: { type: String, enum: ["user", "assistant", "system"], required: true },
-  content: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now },
-});
-
 const conversationSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ["inbound", "outbound"],
-    required: true,
-  },
-  pharmacyId: { type: mongoose.Schema.Types.ObjectId, ref: "Pharmacy" },
-  pharmacyName: { type: String },
-  pharmacyPhone: { type: String },
-  dealerId: { type: mongoose.Schema.Types.ObjectId, ref: "Dealer" },
-  callSid: { type: String },
-  status: {
-    type: String,
-    enum: ["initiated", "in_progress", "completed", "failed"],
-    default: "initiated",
-  },
-  duration: { type: Number },
-  trigger: { type: String },
+  pharmacy_name: { type: String },
+  pharmacist_text: { type: String },
+  ai_response: { type: String },
+  timestamp: { type: Date, default: Date.now },
+  audio_bytes: { type: String },
+  transcript: { type: String },
   summary: { type: String },
-  messages: [messageSchema],
-  stockRequests: [{
-    medicineName: { type: String },
-    quantity: { type: Number },
-    status: { type: String, enum: ["pending", "confirmed", "declined"], default: "pending" },
-  }],
-  sentToDealer: { type: Boolean, default: false },
-  sentToDealerAt: { type: Date },
-}, { timestamps: true });
+  type: { type: String, default: "inbound" },
+  status: { type: String, default: "completed" },
+}, { collection: "Live_Conversations", strict: false });
 
-export const Conversation = mongoose.models.Conversation || mongoose.model("Conversation", conversationSchema);
+export const Conversation = mongoose.models.Conversation || mongoose.model("Conversation", conversationSchema, "Live_Conversations");

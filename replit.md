@@ -51,17 +51,21 @@ client/src/
 
 Server entry: `server/index.ts` → `registerRoutes()` in `server/routes.ts`
 
-### Data Models (Mongoose)
+### Data Models (Mongoose — Actual Atlas Schema)
 
-| Model | Key fields |
-|---|---|
-| Pharmacy | name, phone, address, dealerId, isActive, personalization |
-| Dealer | name, phone, companyName, gstNumber, isActive |
-| Medicine | name, genericName, manufacturer, category, pricePerUnit |
-| Inventory | pharmacyId, medicineId, currentStock, minimumStock, status (normal/low/critical/out_of_stock) |
-| Conversation | type (inbound/outbound), pharmacyId, status, messages[], stockRequests[], summary |
-| StockRequest | pharmacyId, dealerId, medicines[], status, totalAmount |
-| Offer | dealerId, title, discountPercent, validUntil, targetPharmacies[] |
+These match the real MongoDB Atlas `medivoice_ai` database collection structure.
+
+| Model | Collection | Key fields |
+|---|---|---|
+| Pharmacy | `pharmacists` | pharmacy_id, name, contact, location, language_preference, business_type, preferred_brands[], discount_tier (Gold/Silver/Bronze), last_order_date |
+| Dealer | `dealers` | name, companyName, phone, isActive |
+| Medicine | `Medicines` | medicine_id, name, category, manufacturer, price_per_unit, stock_quantity, expiry_date, discount, seasonal_demand[], description |
+| Inventory | `Inventory` | inventory_id, medicine_id, medicine_name, stock_quantity, warehouse_location, status (in_stock/low_stock/out_of_stock), order_limit, next_restock_due |
+| Conversation | `Live_Conversations` | pharmacy_name, pharmacist_text, ai_response, timestamp, transcript, summary, type, status |
+| StockRequest | `Orders` | order_id, pharmacist_id, conversation_id, items[{medicine_name, quantity, unit_price}], total_amount, status (Pending/Processing/Delivered/Cancelled), payment_status, mode_of_payment, order_timestamp, delivery_date |
+| Offer | `Offers` | offer_id, offer_name, description, valid_from, valid_to, applicable_medicines[], discount_percent, target_group, promotion_channel[], status |
+| Personalization | `Personalization` | pharmacist_id, ... |
+| Schedule | `Schedules` | pharmacist_id, next_execution, status, ... |
 
 ### API Structure
 

@@ -1,26 +1,23 @@
 import { mongoose } from "../db/mongoose";
 
-const stockRequestSchema = new mongoose.Schema({
-  pharmacyId: { type: mongoose.Schema.Types.ObjectId, ref: "Pharmacy", required: true },
-  pharmacyName: { type: String },
-  dealerId: { type: mongoose.Schema.Types.ObjectId, ref: "Dealer" },
-  conversationId: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation" },
-  medicines: [{
-    medicineName: { type: String, required: true },
-    quantity: { type: Number, required: true },
-    unit: { type: String, default: "strips" },
-    pricePerUnit: { type: Number },
-    totalPrice: { type: Number },
-  }],
-  status: {
-    type: String,
-    enum: ["pending", "confirmed", "processing", "dispatched", "delivered", "cancelled"],
-    default: "pending",
-  },
-  notes: { type: String },
-  totalAmount: { type: Number },
-  dispatchedAt: { type: Date },
-  deliveredAt: { type: Date },
-}, { timestamps: true });
+const orderItemSchema = new mongoose.Schema({
+  medicine_name: { type: String },
+  quantity: { type: Number },
+  unit_price: { type: Number },
+}, { _id: false });
 
-export const StockRequest = mongoose.models.StockRequest || mongoose.model("StockRequest", stockRequestSchema);
+const orderSchema = new mongoose.Schema({
+  order_id: { type: String },
+  pharmacist_id: { type: String },
+  conversation_id: { type: String },
+  items: [orderItemSchema],
+  total_amount: { type: Number },
+  status: { type: String, default: "Pending" },
+  delivery_date: { type: String },
+  payment_status: { type: String, default: "Pending" },
+  mode_of_payment: { type: String },
+  order_timestamp: { type: String },
+  order_date: { type: String },
+}, { collection: "Orders", strict: false });
+
+export const StockRequest = mongoose.models.StockRequest || mongoose.model("StockRequest", orderSchema, "Orders");

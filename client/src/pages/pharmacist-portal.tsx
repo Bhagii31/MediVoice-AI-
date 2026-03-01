@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Phone, MapPin, Plus, Search, User } from "lucide-react";
+import { Building2, Phone, MapPin, Plus, Search, Tag, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const TIER_COLORS: Record<string, string> = {
+  Gold: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  Silver: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  Bronze: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+};
 
 function PharmacyCard({ pharmacy }: { pharmacy: any }) {
   return (
@@ -21,32 +28,43 @@ function PharmacyCard({ pharmacy }: { pharmacy: any }) {
               <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="font-semibold text-sm">{pharmacy.name}</p>
-              <p className="text-xs text-muted-foreground">{pharmacy.ownerName || "—"}</p>
+              <p className="font-semibold text-sm" data-testid={`text-pharmacy-name-${pharmacy._id}`}>{pharmacy.name}</p>
+              <p className="text-xs text-muted-foreground">{pharmacy.business_type || "Pharmacy"}</p>
             </div>
           </div>
-          <Badge variant={pharmacy.isActive ? "default" : "secondary"} className="text-xs">
-            {pharmacy.isActive ? "Active" : "Inactive"}
-          </Badge>
+          {pharmacy.discount_tier && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIER_COLORS[pharmacy.discount_tier] || "bg-muted text-muted-foreground"}`}>
+              {pharmacy.discount_tier}
+            </span>
+          )}
         </div>
         <div className="mt-3 space-y-1">
-          {pharmacy.phone && (
+          {pharmacy.contact && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Phone className="h-3 w-3" />
-              <span>{pharmacy.phone}</span>
+              <span>{pharmacy.contact}</span>
             </div>
           )}
-          {(pharmacy.city || pharmacy.state) && (
+          {pharmacy.location && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              <span>{[pharmacy.city, pharmacy.state].filter(Boolean).join(", ")}</span>
+              <span>{pharmacy.location}</span>
             </div>
           )}
-          {pharmacy.dealerId && (
+          {pharmacy.language_preference && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <User className="h-3 w-3" />
-              <span>Dealer: {pharmacy.dealerId?.name || "—"}</span>
+              <Globe className="h-3 w-3" />
+              <span>{pharmacy.language_preference}</span>
             </div>
+          )}
+          {pharmacy.preferred_brands?.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Tag className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{pharmacy.preferred_brands.join(", ")}</span>
+            </div>
+          )}
+          {pharmacy.last_order_date && (
+            <p className="text-xs text-muted-foreground mt-1">Last order: {pharmacy.last_order_date}</p>
           )}
         </div>
       </CardContent>
@@ -57,11 +75,17 @@ function PharmacyCard({ pharmacy }: { pharmacy: any }) {
 function AddPharmacyDialog() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", ownerName: "", email: "", address: "", city: "", state: "", pincode: "", licenseNumber: "" });
+  const [form, setForm] = useState({
+    name: "", contact: "", location: "", business_type: "", language_preference: "English", discount_tier: "Silver", preferred_brands: ""
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/pharmacies", form);
+      const payload = {
+        ...form,
+        preferred_brands: form.preferred_brands ? form.preferred_brands.split(",").map(b => b.trim()) : [],
+      };
+      const res = await apiRequest("POST", "/api/pharmacies", payload);
       return res.json();
     },
     onSuccess: () => {
@@ -69,7 +93,7 @@ function AddPharmacyDialog() {
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({ title: "Pharmacy added successfully" });
       setOpen(false);
-      setForm({ name: "", phone: "", ownerName: "", email: "", address: "", city: "", state: "", pincode: "", licenseNumber: "" });
+      setForm({ name: "", contact: "", location: "", business_type: "", language_preference: "English", discount_tier: "Silver", preferred_brands: "" });
     },
     onError: () => toast({ title: "Failed to add pharmacy", variant: "destructive" }),
   });
@@ -86,38 +110,41 @@ function AddPharmacyDialog() {
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2 space-y-1">
             <Label>Pharmacy Name *</Label>
-            <Input value={form.name} onChange={set("name")} placeholder="City Pharma" data-testid="input-pharmacy-name" />
+            <Input value={form.name} onChange={set("name")} placeholder="CVS Pharmacy" data-testid="input-pharmacy-name" />
           </div>
           <div className="space-y-1">
-            <Label>Phone *</Label>
-            <Input value={form.phone} onChange={set("phone")} placeholder="+91 9876543210" data-testid="input-pharmacy-phone" />
+            <Label>Contact Number</Label>
+            <Input value={form.contact} onChange={set("contact")} placeholder="+1 987654321" data-testid="input-pharmacy-contact" />
           </div>
           <div className="space-y-1">
-            <Label>Owner Name</Label>
-            <Input value={form.ownerName} onChange={set("ownerName")} placeholder="Dr. Ramesh" data-testid="input-pharmacy-owner" />
+            <Label>Location</Label>
+            <Input value={form.location} onChange={set("location")} placeholder="Montclair, NJ" />
           </div>
           <div className="space-y-1">
-            <Label>Email</Label>
-            <Input value={form.email} onChange={set("email")} type="email" placeholder="pharmacy@email.com" />
+            <Label>Business Type</Label>
+            <Input value={form.business_type} onChange={set("business_type")} placeholder="Retail Pharmacy" />
           </div>
           <div className="space-y-1">
-            <Label>License Number</Label>
-            <Input value={form.licenseNumber} onChange={set("licenseNumber")} placeholder="MH-12345" />
+            <Label>Language</Label>
+            <Input value={form.language_preference} onChange={set("language_preference")} placeholder="English" />
           </div>
           <div className="col-span-2 space-y-1">
-            <Label>Address</Label>
-            <Input value={form.address} onChange={set("address")} placeholder="123 Main Street" />
+            <Label>Discount Tier</Label>
+            <Select value={form.discount_tier} onValueChange={v => setForm(f => ({ ...f, discount_tier: v }))}>
+              <SelectTrigger data-testid="select-discount-tier"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Gold">Gold</SelectItem>
+                <SelectItem value="Silver">Silver</SelectItem>
+                <SelectItem value="Bronze">Bronze</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-1">
-            <Label>City</Label>
-            <Input value={form.city} onChange={set("city")} placeholder="Mumbai" />
-          </div>
-          <div className="space-y-1">
-            <Label>State</Label>
-            <Input value={form.state} onChange={set("state")} placeholder="Maharashtra" />
+          <div className="col-span-2 space-y-1">
+            <Label>Preferred Brands (comma-separated)</Label>
+            <Input value={form.preferred_brands} onChange={set("preferred_brands")} placeholder="Pfizer, Cipla, Sun Pharma" />
           </div>
         </div>
-        <Button onClick={() => mutation.mutate()} disabled={!form.name || !form.phone || mutation.isPending} className="w-full mt-2" data-testid="button-save-pharmacy">
+        <Button onClick={() => mutation.mutate()} disabled={!form.name || mutation.isPending} className="w-full mt-2" data-testid="button-save-pharmacy">
           {mutation.isPending ? "Saving..." : "Save Pharmacy"}
         </Button>
       </DialogContent>
@@ -127,20 +154,21 @@ function AddPharmacyDialog() {
 
 export default function PharmacistPortal() {
   const [search, setSearch] = useState("");
-  const { data: pharmacies = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/pharmacies"] });
-
-  const filtered = pharmacies.filter((p: any) =>
-    p.name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.city?.toLowerCase().includes(search.toLowerCase()) ||
-    p.ownerName?.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data: pharmacies = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/pharmacies", search],
+    queryFn: async () => {
+      const params = search ? `?search=${encodeURIComponent(search)}` : "";
+      const res = await fetch(`/api/pharmacies${params}`);
+      return res.json();
+    }
+  });
 
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-page-title">Pharmacist Portal</h1>
-          <p className="text-muted-foreground text-sm">Manage pharmacies and their profiles</p>
+          <p className="text-muted-foreground text-sm">Manage pharmacy profiles and preferences</p>
         </div>
         <AddPharmacyDialog />
       </div>
@@ -149,7 +177,7 @@ export default function PharmacistPortal() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="Search pharmacies..."
+          placeholder="Search by name or location..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           data-testid="input-search-pharmacy"
@@ -158,20 +186,20 @@ export default function PharmacistPortal() {
 
       {isLoading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-36 rounded-md" />)}
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-40 rounded-md" />)}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : pharmacies.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <Building2 className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground">
-              {search ? "No pharmacies match your search." : "No pharmacies yet. Add your first pharmacy to get started."}
+              {search ? "No pharmacies match your search." : "No pharmacies found in the database."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((p: any) => <PharmacyCard key={p._id} pharmacy={p} />)}
+          {pharmacies.map((p: any) => <PharmacyCard key={p._id} pharmacy={p} />)}
         </div>
       )}
     </div>
