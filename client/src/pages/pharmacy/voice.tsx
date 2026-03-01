@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, MicOff, Send, PhoneOff, Zap, Bot, User, Lightbulb } from "lucide-react";
+import { Mic, MicOff, Send, PhoneOff, Zap, Bot, User, Lightbulb, Phone, Copy, CheckCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,7 +22,7 @@ function WaveVisualizer({ active }: { active: boolean }) {
       {heights.map((h, i) => (
         <div
           key={i}
-          className={`rounded-full transition-all duration-300 ${active ? "bg-emerald-400" : "bg-muted-foreground/20"}`}
+          className={`rounded-full transition-all duration-300 ${active ? "bg-emerald-400" : "bg-white/30"}`}
           style={{
             width: "3px",
             height: active ? `${h}px` : "4px",
@@ -76,13 +76,85 @@ function TypingIndicator() {
   );
 }
 
+function TwilioCallPanel({ twilioNumber }: { twilioNumber: string }) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const copyNumber = () => {
+    navigator.clipboard.writeText(twilioNumber);
+    setCopied(true);
+    toast({ title: "Phone number copied!" });
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  return (
+    <div className="border border-border rounded-2xl bg-card shadow-sm overflow-hidden animate-scale-in">
+      <div className="px-5 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <Phone className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-semibold text-sm">Call via Phone</p>
+            <p className="text-purple-200 text-xs">MediVoice AI answers your call</p>
+          </div>
+        </div>
+        <div className="h-2 w-2 rounded-full bg-emerald-400 animate-blink" />
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide font-medium">MediVoice AI Hotline</p>
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-2xl font-bold tracking-widest font-mono" data-testid="text-twilio-number">{twilioNumber}</span>
+            <button
+              onClick={copyNumber}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              data-testid="button-copy-number"
+            >
+              {copied ? <CheckCheck className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2 text-xs text-muted-foreground">
+          <div className="flex items-start gap-2 bg-muted/50 rounded-xl p-3">
+            <span className="font-bold text-purple-600 dark:text-purple-400 flex-shrink-0">1.</span>
+            <span>Call the number above from your registered pharmacy number</span>
+          </div>
+          <div className="flex items-start gap-2 bg-muted/50 rounded-xl p-3">
+            <span className="font-bold text-purple-600 dark:text-purple-400 flex-shrink-0">2.</span>
+            <span>MediVoice AI will greet you and ask about your stock requirements</span>
+          </div>
+          <div className="flex items-start gap-2 bg-muted/50 rounded-xl p-3">
+            <span className="font-bold text-purple-600 dark:text-purple-400 flex-shrink-0">3.</span>
+            <span>Speak your needs — the call is transcribed and saved automatically</span>
+          </div>
+        </div>
+
+        <a href={`tel:${twilioNumber}`}>
+          <Button
+            className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+            data-testid="button-dial-twilio"
+          >
+            <Phone className="h-4 w-4" /> Dial Now
+          </Button>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function VoicePage() {
   const { toast } = useToast();
   const [callActive, setCallActive] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [mode, setMode] = useState<"chat" | "phone">("chat");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { data: twilioStatus } = useQuery<any>({ queryKey: ["/api/twilio/status"] });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -119,7 +191,7 @@ export default function VoicePage() {
     try {
       const data = await chatMutation.mutateAsync(msg);
       setIsTyping(false);
-      const reply = data.response || data.message || "I'm sorry, I couldn't process that right now.";
+      const reply = data.reply || data.response || data.message || "I'm sorry, I couldn't process that right now.";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setIsTyping(false);
@@ -134,25 +206,67 @@ export default function VoicePage() {
           <div className="flex items-center gap-2 mb-0.5">
             {callActive && <div className="h-2 w-2 rounded-full bg-emerald-500 animate-blink" />}
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              {callActive ? "Call Active" : "AI Assistant"}
+              {callActive ? "Chat Active" : "AI Assistant"}
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">MediVoice AI</h1>
         </div>
-        {callActive && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={endCall}
-            className="gap-2 animate-fade-in"
-            data-testid="button-end-call"
-          >
-            <PhoneOff className="h-4 w-4" /> End Call
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!callActive && (
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              <button
+                onClick={() => setMode("chat")}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${mode === "chat" ? "bg-emerald-600 text-white" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                data-testid="button-mode-chat"
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => setMode("phone")}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${mode === "phone" ? "bg-purple-600 text-white" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                data-testid="button-mode-phone"
+              >
+                Phone
+              </button>
+            </div>
+          )}
+          {callActive && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={endCall}
+              className="gap-2 animate-fade-in"
+              data-testid="button-end-call"
+            >
+              <PhoneOff className="h-4 w-4" /> End
+            </Button>
+          )}
+        </div>
       </div>
 
-      {!callActive ? (
+      {mode === "phone" && !callActive ? (
+        <div className="flex-1 flex flex-col gap-4 max-w-md mx-auto w-full animate-scale-in">
+          {twilioStatus?.configured ? (
+            <TwilioCallPanel twilioNumber={twilioStatus.phoneNumber} />
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                <Phone className="h-8 w-8 text-muted-foreground opacity-40" />
+              </div>
+              <div>
+                <p className="font-semibold">Phone calling not configured</p>
+                <p className="text-sm text-muted-foreground mt-1">Ask your dealer to set up Twilio credentials.</p>
+              </div>
+              <button
+                onClick={() => setMode("chat")}
+                className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+              >
+                Use Chat mode instead →
+              </button>
+            </div>
+          )}
+        </div>
+      ) : !callActive ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-scale-in">
           <div className="text-center">
             <div className="relative inline-block mb-6">
@@ -165,17 +279,17 @@ export default function VoicePage() {
             </div>
             <h2 className="text-xl font-bold mb-2">Ready to Connect</h2>
             <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
-              Start a conversation with MediVoice AI to inquire about medicines, check stock, and explore current offers.
+              Chat with MediVoice AI to check stock, compare pricing, and explore active promotional offers.
             </p>
           </div>
 
           <Button
             size="lg"
             onClick={startCall}
-            className="gap-2.5 px-8 py-6 text-base font-semibold rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse-ring"
+            className="gap-2.5 px-8 py-6 text-base font-semibold rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
             data-testid="button-start-call"
           >
-            <Mic className="h-5 w-5" /> Start Call
+            <Mic className="h-5 w-5" /> Start Chat
           </Button>
 
           <div className="w-full max-w-sm space-y-2">
@@ -205,7 +319,7 @@ export default function VoicePage() {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-sm">MediVoice AI</p>
-                  <p className="text-emerald-200 text-xs">Powered by OpenAI GPT-4</p>
+                  <p className="text-emerald-200 text-xs">Powered by OpenAI GPT-4o</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

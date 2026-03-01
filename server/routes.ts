@@ -445,6 +445,19 @@ export async function registerRoutes(
     }
   });
 
+  // ─── TWILIO STATUS ────────────────────────────────────────────────────
+  app.get("/api/twilio/status", (_req, res) => {
+    const configured = !!(
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_PHONE_NUMBER
+    );
+    res.json({
+      configured,
+      phoneNumber: configured ? process.env.TWILIO_PHONE_NUMBER : null,
+    });
+  });
+
   // ─── AI CHAT (Inbound call simulation) ──────────────────────────────
   app.post("/api/ai/chat", async (req, res) => {
     try {
@@ -482,14 +495,19 @@ export async function registerRoutes(
 
   // ─── TWILIO WEBHOOK (Inbound call handler) ───────────────────────────
   app.post("/api/twilio/inbound", async (req, res) => {
-    const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-    if (!twilioSid) {
-      return res.status(503).send("Twilio not configured");
-    }
+    const callerNumber = req.body?.From || "Unknown";
+
+    // Try to find the pharmacy by contact number
+    let pharmacyName = "Caller";
+    try {
+      const pharmacy = await Pharmacy.findOne({ contact: callerNumber }).lean() as any;
+      if (pharmacy) pharmacyName = pharmacy.name;
+    } catch {}
+
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="alice">Welcome to MediVoice AI. How can I assist you today? Please describe your stock requirements.</Say>
-  <Record maxLength="30" action="/api/twilio/process-recording" transcribe="true" transcribeCallback="/api/twilio/transcription" />
+  <Say voice="alice">Welcome to MediVoice AI. Hello ${pharmacyName}! I can help you with stock availability, medicine pricing, and active promotional offers. Please describe your requirements after the beep.</Say>
+  <Record maxLength="45" action="/api/twilio/process-recording" transcribe="true" transcribeCallback="/api/twilio/transcription" playBeep="true" />
 </Response>`;
     res.type("text/xml").send(twiml);
   });
@@ -497,10 +515,69 @@ export async function registerRoutes(
   app.post("/api/twilio/process-recording", async (req, res) => {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="alice">Thank you. I have recorded your request and will process it shortly. Goodbye!</Say>
+  <Say voice="alice">Thank you! I have received your request and our team will process it shortly. You will receive a confirmation. Goodbye!</Say>
   <Hangup />
 </Response>`;
     res.type("text/xml").send(twiml);
+  });
+
+  // ─── TWILIO TRANSCRIPTION CALLBACK ────────────────────────────────────
+  app.post("/api/twilio/transcription", async (req, res) => {
+    try {
+      const { TranscriptionText, From, CallSid } = req.body;
+      if (!TranscriptionText) return res.sendStatus(200);
+
+      // Look up pharmacy by caller number
+      let pharmacyName = From || "Unknown Caller";
+      let pharmacyId: string | null = null;
+      try {
+        const pharmacy = await Pharmacy.findOne({ contact: From }).lean() as any;
+        if (pharmacy) { pharmacyName = pharmacy.name; pharmacyId = String(pharmacy._id); }
+      } catch {}
+
+      // Generate AI response to the transcribed speech
+      let aiResponse = "Thank you for your request. We will process it shortly.";
+      try {
+        const medicines = await Medicine.find({ stock_quantity: { $gt: 0 } }).select("name price_per_unit stock_quantity discount").limit(10).lean() as any[];
+        const offers = await Offer.find({ status: "Active" }).select("offer_name discount_percent target_group").limit(5).lean() as any[];
+        const medicineList = medicines.map((m: any) => `${m.name} ($${m.price_per_unit}, ${m.stock_quantity} units${m.discount ? `, ${m.discount}% off` : ""})`).join("; ");
+        const offerList = offers.map((o: any) => `${o.offer_name}: ${o.discount_percent}% off`).join("; ");
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are MediVoice AI. A pharmacist just called and said: "${TranscriptionText}". Reply in 1-2 sentences addressing their request. Available stock: ${medicineList}. Active offers: ${offerList}. Be helpful and specific.`
+            },
+            { role: "user", content: TranscriptionText }
+          ],
+          max_tokens: 200,
+        });
+        aiResponse = completion.choices[0]?.message?.content || aiResponse;
+      } catch (err) {
+        console.error("AI transcription response error:", err);
+      }
+
+      // Save the conversation to MongoDB
+      if (isMongoConnected()) {
+        const conversation = new Conversation({
+          pharmacy_name: pharmacyName,
+          pharmacist_text: TranscriptionText,
+          ai_response: aiResponse,
+          timestamp: new Date(),
+          type: "inbound",
+          call_sid: CallSid,
+          status: "transcribed",
+        });
+        await conversation.save();
+      }
+
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("Transcription callback error:", err);
+      res.sendStatus(200);
+    }
   });
 
   // ─── OUTBOUND CALL TRIGGER ───────────────────────────────────────────

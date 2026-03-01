@@ -13,6 +13,7 @@ import NotFound from "@/pages/not-found";
 
 import DealerDashboard from "@/pages/dealer/dashboard";
 import DealerPortal from "@/pages/dealer-portal";
+import PharmaciesPage from "@/pages/dealer/pharmacies";
 import Medicines from "@/pages/medicines";
 import Inventory from "@/pages/inventory";
 import StockRequests from "@/pages/stock-requests";
@@ -31,7 +32,7 @@ function DealerRouter() {
   return (
     <Switch>
       <Route path="/dealer" component={DealerDashboard} />
-      <Route path="/dealer/pharmacies" component={DealerPortal} />
+      <Route path="/dealer/pharmacies" component={PharmaciesPage} />
       <Route path="/dealer/medicines" component={Medicines} />
       <Route path="/dealer/inventory" component={Inventory} />
       <Route path="/dealer/orders" component={StockRequests} />
