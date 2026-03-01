@@ -65,7 +65,7 @@ export default function PharmacySelector() {
                 key={p._id}
                 className="w-full text-left bg-card border border-border rounded-xl px-4 py-3.5 hover:border-emerald-400 hover:shadow-md transition-all duration-200 animate-fade-in-up group"
                 style={{ animationDelay: `${i * 40}ms` }}
-                onClick={() => setPharmacy(p._id, p.name)}
+                onClick={() => setPharmacy(p._id, p.name, p.pharmacy_id || p._id)}
                 data-testid={`button-select-pharmacy-${p._id}`}
               >
                 <div className="flex items-center gap-3">

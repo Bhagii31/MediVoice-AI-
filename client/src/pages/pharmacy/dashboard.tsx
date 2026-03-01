@@ -62,10 +62,17 @@ const QUICK_ACTIONS = [
 ];
 
 export default function PharmacyDashboard() {
-  const { pharmacyName } = usePharmacyContext();
+  const { pharmacyName, pharmacyCode } = usePharmacyContext();
   const { data: stats } = useQuery<any>({ queryKey: ["/api/stats"] });
   const { data: convsData, isLoading: convsLoading } = useQuery<any>({ queryKey: ["/api/conversations"] });
-  const { data: orders } = useQuery<any[]>({ queryKey: ["/api/stock-requests"] });
+  const { data: orders } = useQuery<any[]>({
+    queryKey: ["/api/stock-requests", pharmacyCode],
+    queryFn: async () => {
+      const params = pharmacyCode ? `?pharmacist_id=${encodeURIComponent(pharmacyCode)}` : "";
+      const res = await fetch(`/api/stock-requests${params}`);
+      return res.json();
+    },
+  });
   const { data: twilioStatus } = useQuery<any>({ queryKey: ["/api/twilio/status"] });
 
   const conversations = convsData?.conversations || [];

@@ -189,11 +189,15 @@ function InvoiceCard({ order, index }: { order: any; index: number }) {
 }
 
 export default function PharmacyInvoices() {
-  const { pharmacyName } = usePharmacyContext();
+  const { pharmacyName, pharmacyCode } = usePharmacyContext();
   const [search, setSearch] = useState("");
-
   const { data: orders = [], isLoading } = useQuery<any[]>({
-    queryKey: ["/api/stock-requests"],
+    queryKey: ["/api/stock-requests", pharmacyCode],
+    queryFn: async () => {
+      const params = pharmacyCode ? `?pharmacist_id=${encodeURIComponent(pharmacyCode)}` : "";
+      const res = await fetch(`/api/stock-requests${params}`);
+      return res.json();
+    },
   });
 
   const filtered = orders.filter((o: any) => {

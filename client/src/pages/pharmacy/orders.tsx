@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList, User, Calendar, CreditCard, Package, TrendingUp, Mic } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
+import { usePharmacyContext } from "@/lib/pharmacy-context";
 
 const STATUS_CONFIG: Record<string, { bg: string; dot: string; label: string; bar: string }> = {
   Pending:    { bg: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900", dot: "bg-amber-500", label: "Pending", bar: "bg-amber-400" },
@@ -97,7 +98,15 @@ function OrderCard({ order, index }: { order: any; index: number }) {
 }
 
 export default function PharmacyOrders() {
-  const { data: orders = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/stock-requests"] });
+  const { pharmacyCode } = usePharmacyContext();
+  const { data: orders = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/stock-requests", pharmacyCode],
+    queryFn: async () => {
+      const params = pharmacyCode ? `?pharmacist_id=${encodeURIComponent(pharmacyCode)}` : "";
+      const res = await fetch(`/api/stock-requests${params}`);
+      return res.json();
+    },
+  });
   const delivered = orders.filter((o: any) => o.status === "Delivered").length;
   const pending = orders.filter((o: any) => o.status === "Pending" || o.status === "Processing").length;
 

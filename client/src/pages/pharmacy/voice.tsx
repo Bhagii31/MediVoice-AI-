@@ -125,9 +125,9 @@ function HowItWorks() {
   );
 }
 
-function RecentCalls({ pharmacyName }: { pharmacyName: string | null }) {
+function RecentCalls({ pharmacyName, pharmacyCode }: { pharmacyName: string | null; pharmacyCode: string | null }) {
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/conversations", pharmacyName],
+    queryKey: ["/api/conversations", pharmacyName, pharmacyCode],
     queryFn: async () => {
       const params = new URLSearchParams({ limit: "5" });
       if (pharmacyName) params.set("pharmacy", pharmacyName);
@@ -205,7 +205,7 @@ function NotConfigured() {
 }
 
 export default function VoicePage() {
-  const { pharmacyName } = usePharmacyContext();
+  const { pharmacyName, pharmacyCode } = usePharmacyContext();
   const { data: twilioStatus, isLoading } = useQuery<any>({ queryKey: ["/api/twilio/status"] });
 
   return (
@@ -227,7 +227,7 @@ export default function VoicePage() {
         <>
           <CallBotHero twilioNumber={twilioStatus.phoneNumber} />
           <HowItWorks />
-          <RecentCalls pharmacyName={pharmacyName} />
+          <RecentCalls pharmacyName={pharmacyName} pharmacyCode={pharmacyCode} />
         </>
       ) : (
         <NotConfigured />

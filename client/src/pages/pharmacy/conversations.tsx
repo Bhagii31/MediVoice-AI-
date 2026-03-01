@@ -5,16 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { MessageSquare, Search, ArrowRight, ChevronLeft, ChevronRight, Bot, Phone, Mic } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePharmacyContext } from "@/lib/pharmacy-context";
 
 export default function PharmacyConversations() {
+  const { pharmacyName } = usePharmacyContext();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/conversations", search, page],
+    queryKey: ["/api/conversations", pharmacyName, search, page],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
-      if (search) params.set("pharmacy", search);
+      const pharmacyFilter = search || pharmacyName;
+      if (pharmacyFilter) params.set("pharmacy", pharmacyFilter);
       const res = await fetch(`/api/conversations?${params}`);
       return res.json();
     }
@@ -30,7 +33,9 @@ export default function PharmacyConversations() {
           <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">AI History</span>
         </div>
         <h1 className="text-2xl font-bold" data-testid="text-page-title">Call History</h1>
-        <p className="text-muted-foreground text-sm">All your conversations with MediVoice AI — stored in MongoDB Atlas</p>
+        <p className="text-muted-foreground text-sm">
+          {pharmacyName ? `MediVoice AI calls for ${pharmacyName}` : "All conversations with MediVoice AI"}
+        </p>
       </div>
 
       {!isLoading && (data?.total || 0) > 0 && (
@@ -45,7 +50,7 @@ export default function PharmacyConversations() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="Search by pharmacy name..."
+          placeholder="Search in call history…"
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
           data-testid="input-search-conversation"
