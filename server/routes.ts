@@ -12,10 +12,14 @@ import { Personalization } from "./models/Personalization";
 import { Schedule } from "./models/Schedule";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAI(): OpenAI {
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OpenAI API key not configured. Set OPENAI_API_KEY in your .env file.");
+  return new OpenAI({
+    apiKey,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  });
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -498,7 +502,7 @@ export async function registerRoutes(
         { role: "user" as const, content: message },
       ];
 
-      const response = await openai.chat.completions.create({
+      const response = await getOpenAI().chat.completions.create({
         model: "gpt-4o",
         messages,
         max_tokens: 300,
@@ -562,7 +566,7 @@ export async function registerRoutes(
         const medicineList = medicines.map((m: any) => `${m.name} ($${m.price_per_unit}, ${m.stock_quantity} units${m.discount ? `, ${m.discount}% off` : ""})`).join("; ");
         const offerList = offers.map((o: any) => `${o.offer_name}: ${o.discount_percent}% off`).join("; ");
 
-        const completion = await openai.chat.completions.create({
+        const completion = await getOpenAI().chat.completions.create({
           model: "gpt-4o",
           messages: [
             {
