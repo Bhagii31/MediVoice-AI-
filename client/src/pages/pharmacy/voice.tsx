@@ -3,11 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Phone, Copy, CheckCheck, PhoneCall, Clock, Bot, ArrowRight,
+  Phone, PhoneCall, Clock, Bot, ArrowRight,
   PhoneOff, Mic, Sparkles, MessageSquare, Info, ShieldCheck,
   ChevronRight, Star, Zap
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePharmacyContext } from "@/lib/pharmacy-context";
@@ -42,16 +41,7 @@ const WHAT_TO_ASK = [
 ];
 
 function CallBotHero({ twilioNumber }: { twilioNumber: string }) {
-  const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
   const [callActive, setCallActive] = useState(false);
-
-  const copyNumber = () => {
-    navigator.clipboard.writeText(twilioNumber);
-    setCopied(true);
-    toast({ title: "Phone number copied!", description: "Open your dialler and paste to call." });
-    setTimeout(() => setCopied(false), 3000);
-  };
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 shadow-2xl animate-scale-in">
@@ -92,22 +82,12 @@ function CallBotHero({ twilioNumber }: { twilioNumber: string }) {
 
         <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-5 space-y-5 border border-white/25 shadow-inner">
           <div className="text-center">
-            <p className="text-emerald-200 text-xs uppercase tracking-widest mb-2 font-semibold">AI Hotline Number</p>
+            <p className="text-emerald-200 text-xs uppercase tracking-widest mb-3 font-semibold">MediVoice AI Hotline</p>
             <div className="flex items-center justify-center gap-3">
-              <span className="text-3xl font-black text-white tracking-widest font-mono" data-testid="text-twilio-number">
-                {twilioNumber}
-              </span>
-              <button
-                onClick={copyNumber}
-                className="p-2.5 rounded-xl bg-white/20 hover:bg-white/35 transition-all duration-200 border border-white/20 hover:scale-110"
-                data-testid="button-copy-number"
-                title="Copy number"
-              >
-                {copied
-                  ? <CheckCheck className="h-4 w-4 text-emerald-300" />
-                  : <Copy className="h-4 w-4 text-white" />
-                }
-              </button>
+              <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-5 py-3">
+                <Phone className="h-5 w-5 text-emerald-300" />
+                <span className="text-white font-bold text-base">Tap below to connect</span>
+              </div>
             </div>
           </div>
 
