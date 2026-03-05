@@ -205,7 +205,7 @@ export default function PharmacyDashboard() {
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3 border border-white/30">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-blink" />
-                      {twilioStatus?.configured ? `Hotline: ${twilioStatus.phoneNumber}` : "AI Call Bot · 24/7"}
+                      Call MediVoice AI · 24/7
                     </div>
                     <h2 className="text-xl font-black text-white">Call MediVoice AI Now</h2>
                     <p className="text-emerald-100 text-sm mt-1.5 leading-relaxed max-w-xs">
