@@ -606,28 +606,39 @@ export async function registerRoutes(
   // ─── OUTBOUND CALL TRIGGER ───────────────────────────────────────────
   app.post("/api/twilio/outbound", async (req, res) => {
     try {
-      const { pharmacyId, reason } = req.body;
+      const { pharmacyId, reason, to: directNumber, pharmacyName: directName } = req.body;
       const twilio_sid = process.env.TWILIO_ACCOUNT_SID;
       const twilio_token = process.env.TWILIO_AUTH_TOKEN;
       const twilio_number = process.env.TWILIO_PHONE_NUMBER;
 
       if (!twilio_sid || !twilio_token || !twilio_number) {
-        return res.status(503).json({ error: "Twilio not configured. Please add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to secrets." });
+        return res.status(503).json({ error: "Twilio not configured." });
       }
 
-      const pharmacy = await Pharmacy.findById(pharmacyId);
-      if (!pharmacy) return res.status(404).json({ error: "Pharmacy not found" });
+      let toNumber = directNumber;
+      let resolvedName = directName || "Pharmacist";
+
+      if (!toNumber && pharmacyId) {
+        const pharmacy = await Pharmacy.findById(pharmacyId);
+        if (!pharmacy) return res.status(404).json({ error: "Pharmacy not found" });
+        toNumber = (pharmacy as any).contact;
+        resolvedName = (pharmacy as any).name;
+      }
+
+      if (!toNumber) return res.status(400).json({ error: "No phone number provided." });
 
       const { default: twilioLib } = await import("twilio");
       const twilio = twilioLib(twilio_sid, twilio_token);
+
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
       const call = await twilio.calls.create({
-        to: (pharmacy as any).contact,
+        to: toNumber,
         from: twilio_number,
-        url: `${req.protocol}://${req.get("host")}/api/twilio/outbound-script?pharmacyId=${pharmacyId}&reason=${encodeURIComponent(reason || "stock check")}`,
+        url: `${baseUrl}/api/twilio/outbound-script?reason=${encodeURIComponent(reason || "stock check and medicine enquiry")}&pharmacyName=${encodeURIComponent(resolvedName)}`,
       });
 
       const conversation = new Conversation({
-        pharmacy_name: (pharmacy as any).name,
+        pharmacy_name: resolvedName,
         timestamp: new Date(),
         type: "outbound",
         status: "initiated",
@@ -642,16 +653,12 @@ export async function registerRoutes(
   });
 
   app.get("/api/twilio/outbound-script", async (req, res) => {
-    const { pharmacyId, reason } = req.query;
-    let pharmacy: any = null;
-    if (pharmacyId) {
-      pharmacy = await Pharmacy.findById(pharmacyId).lean();
-    }
-    const pharmacyName = pharmacy?.name || "the pharmacy";
+    const { pharmacyName, reason } = req.query as Record<string, string>;
+    const name = pharmacyName || "valued pharmacy";
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="alice">Hello, this is MediVoice AI calling on behalf of your medicine dealer. I'm reaching out to ${pharmacyName} regarding a ${reason || "stock check"}. Do you need to reorder any medicines? Please let me know your requirements.</Say>
-  <Record maxLength="60" action="/api/twilio/process-recording" transcribe="true" />
+  <Say voice="alice">Hello! This is MediVoice AI, your automated pharmacy assistant. I am calling ${name} regarding a ${reason || "stock check and medicine enquiry"}. Please speak your questions about stock availability, pricing, or current offers after the beep, and I will assist you right away.</Say>
+  <Record maxLength="60" action="/api/twilio/process-recording" transcribe="true" transcribeCallback="/api/twilio/transcription" playBeep="true" />
 </Response>`;
     res.type("text/xml").send(twiml);
   });
