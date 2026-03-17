@@ -136,27 +136,27 @@ function LiveRefreshIndicator({ interval = 30 }: { interval?: number }) {
   );
 }
 
-function StatCard({ title, target, icon: Icon, gradient, href, delay = 0, subtitle, alert = false }: {
-  title: string; target?: number; icon: any; gradient: string; href?: string; delay?: number; subtitle?: string; alert?: boolean;
+function StatCard({ title, target, icon: Icon, gradient, href, delay = 0, subtitle, alert = false, glowClass = "" }: {
+  title: string; target?: number; icon: any; gradient: string; href?: string; delay?: number; subtitle?: string; alert?: boolean; glowClass?: string;
 }) {
   const value = useCountUp(target);
   const content = (
-    <Card className="hover-elevate cursor-pointer overflow-hidden group relative border-0 shadow-md animate-fade-in-up" style={{ animationDelay: `${delay}ms` }}>
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-[0.07] transition-opacity duration-300 ${gradient}`} />
+    <Card className={`hover-elevate hover-shine cursor-pointer overflow-hidden group relative border-0 shadow-md animate-fade-in-up transition-all duration-300 ${glowClass}`} style={{ animationDelay: `${delay}ms` }}>
+      <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${gradient}`} />
       {alert && target !== undefined && target > 0 && (
         <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-blink" />
       )}
       <CardHeader className="flex flex-row items-center justify-between gap-1 pb-2 space-y-0 pt-4">
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{title}</p>
-        <div className={`p-2.5 rounded-xl text-white shadow-md group-hover:scale-110 transition-transform duration-200 ${gradient}`}>
-          <Icon className="h-4 w-4" />
+        <div className={`p-2.5 rounded-xl text-white shadow-md group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 ${gradient}`}>
+          <Icon className="h-4 w-4 icon-bounce" />
         </div>
       </CardHeader>
       <CardContent className="pb-4">
         {target === undefined ? (
           <Skeleton className="h-9 w-16" />
         ) : (
-          <p className="text-4xl font-black tracking-tight" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, "-")}`}>{value}</p>
+          <p className="text-4xl font-black tracking-tight group-hover:scale-105 transition-transform duration-200 origin-left" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, "-")}`}>{value}</p>
         )}
         <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
           <Activity className={`h-3 w-3 ${alert && (target || 0) > 0 ? "text-red-500" : "text-emerald-500"}`} />
@@ -279,16 +279,16 @@ function LiveActivityFeed() {
       {LIVE_EVENTS.slice(0, visible).map((ev, i) => {
         const Icon = ev.icon;
         return (
-          <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 animate-fade-in-up ${pulse === i ? "border-primary/50 bg-primary/5 shadow-sm" : "border-border bg-card"}`}
+          <div key={i} className={`row-interactive flex items-center gap-3 p-3 rounded-xl border animate-fade-in-up group ${pulse === i ? "border-primary/50 bg-primary/5 shadow-sm" : "border-border bg-card hover:border-primary/30"}`}
             style={{ animationDelay: `${i * 50}ms` }}>
-            <div className={`h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0`}>
-              <Icon className={`h-4 w-4 ${ev.color}`} />
+            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
+              <Icon className={`h-4 w-4 ${ev.color} icon-bounce`} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold truncate">{ev.text}</p>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className={`h-1.5 w-1.5 rounded-full ${ev.dot}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${ev.dot} animate-blink`} />
               <span className="text-xs text-muted-foreground">{ev.time}</span>
             </div>
           </div>
@@ -452,10 +452,10 @@ export default function DealerDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Pharmacies" target={stats?.pharmacies} icon={Building2} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" href="/dealer/pharmacies" delay={0} subtitle="Partner pharmacies" />
-        <StatCard title="Pending Orders" target={stats?.pendingOrders} icon={ClipboardList} gradient="bg-gradient-to-br from-orange-500 to-red-500" href="/dealer/orders" delay={80} subtitle="Awaiting processing" alert />
-        <StatCard title="AI Calls" target={stats?.conversations} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" href="/dealer/conversations" delay={160} subtitle="Total recorded" />
-        <StatCard title="Low Stock" target={stats?.lowStock} icon={AlertTriangle} gradient="bg-gradient-to-br from-amber-500 to-orange-500" href="/dealer/inventory" delay={240} subtitle="Needs restocking" alert />
+        <StatCard title="Pharmacies" target={stats?.pharmacies} icon={Building2} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" href="/dealer/pharmacies" delay={0} subtitle="Partner pharmacies" glowClass="stat-card-purple" />
+        <StatCard title="Pending Orders" target={stats?.pendingOrders} icon={ClipboardList} gradient="bg-gradient-to-br from-orange-500 to-red-500" href="/dealer/orders" delay={80} subtitle="Awaiting processing" alert glowClass="stat-card-orange" />
+        <StatCard title="AI Calls" target={stats?.conversations} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" href="/dealer/conversations" delay={160} subtitle="Total recorded" glowClass="stat-card-blue" />
+        <StatCard title="Low Stock" target={stats?.lowStock} icon={AlertTriangle} gradient="bg-gradient-to-br from-amber-500 to-orange-500" href="/dealer/inventory" delay={240} subtitle="Needs restocking" alert glowClass="stat-card-amber" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -543,15 +543,15 @@ export default function DealerDashboard() {
             <CardContent className="p-2">
               {QUICK_ACTIONS.map(({ label, desc, href, icon: Icon, gradient }, i) => (
                 <Link key={href} href={href}>
-                  <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted cursor-pointer transition-all duration-200 group animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>
-                      <Icon className="h-4 w-4 text-white" />
+                  <div className="row-interactive flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted cursor-pointer group animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-125 group-hover:rotate-6 transition-all duration-300`}>
+                      <Icon className="h-4 w-4 text-white icon-bounce" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold">{label}</p>
                       <p className="text-xs text-muted-foreground">{desc}</p>
                     </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                   </div>
                 </Link>
               ))}

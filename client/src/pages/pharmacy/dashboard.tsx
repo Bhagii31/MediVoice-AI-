@@ -36,25 +36,25 @@ function greeting() {
   return "Good evening";
 }
 
-function StatCard({ title, target, icon: Icon, gradient, href, delay = 0, subtitle }: {
-  title: string; target?: number; icon: any; gradient: string; href?: string; delay?: number; subtitle?: string;
+function StatCard({ title, target, icon: Icon, gradient, href, delay = 0, subtitle, glowClass = "" }: {
+  title: string; target?: number; icon: any; gradient: string; href?: string; delay?: number; subtitle?: string; glowClass?: string;
 }) {
   const value = useCountUp(target);
   const content = (
-    <Card className="hover-elevate cursor-pointer overflow-hidden group relative border-0 shadow-md animate-fade-in-up" style={{ animationDelay: `${delay}ms` }}>
-      <div className={`absolute inset-0 opacity-5 group-hover:opacity-15 transition-opacity duration-300 ${gradient}`} />
+    <Card className={`hover-elevate hover-shine cursor-pointer overflow-hidden group relative border-0 shadow-md animate-fade-in-up transition-all duration-300 ${glowClass}`} style={{ animationDelay: `${delay}ms` }}>
+      <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${gradient}`} />
       <div className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-5 group-hover:opacity-10 transition-opacity -translate-y-1/2 translate-x-1/2" style={{ background: "currentColor" }} />
       <CardHeader className="flex flex-row items-center justify-between gap-1 pb-2 space-y-0 pt-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
-        <div className={`p-2.5 rounded-xl text-white shadow-md group-hover:scale-110 transition-transform duration-200 ${gradient}`}>
-          <Icon className="h-4 w-4" />
+        <div className={`p-2.5 rounded-xl text-white shadow-md group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 ${gradient}`}>
+          <Icon className="h-4 w-4 icon-bounce" />
         </div>
       </CardHeader>
       <CardContent className="pb-4">
         {target === undefined ? (
           <Skeleton className="h-9 w-16" />
         ) : (
-          <p className="text-4xl font-black tracking-tight">{value}</p>
+          <p className="text-4xl font-black tracking-tight group-hover:scale-105 transition-transform duration-200 origin-left">{value}</p>
         )}
         <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
           <Activity className="h-3 w-3 text-emerald-500" />
@@ -186,10 +186,10 @@ export default function PharmacyDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Orders" target={orders?.length} icon={Package} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" href="/pharmacy/orders" delay={0} subtitle={`${deliveredOrders.length} delivered`} />
-        <StatCard title="AI Calls" target={convsData?.total} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" href="/pharmacy/conversations" delay={80} subtitle="Recorded & saved" />
-        <StatCard title="In Progress" target={pendingOrders.length} icon={Clock} gradient="bg-gradient-to-br from-orange-500 to-amber-500" href="/pharmacy/orders" delay={160} subtitle="Awaiting delivery" />
-        <StatCard title="Active Offers" target={stats?.offers} icon={Star} gradient="bg-gradient-to-br from-violet-500 to-purple-600" href="/pharmacy/catalogue" delay={240} subtitle="Ask AI about them" />
+        <StatCard title="Total Orders" target={orders?.length} icon={Package} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" href="/pharmacy/orders" delay={0} subtitle={`${deliveredOrders.length} delivered`} glowClass="stat-card-emerald" />
+        <StatCard title="AI Calls" target={convsData?.total} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" href="/pharmacy/conversations" delay={80} subtitle="Recorded & saved" glowClass="stat-card-blue" />
+        <StatCard title="In Progress" target={pendingOrders.length} icon={Clock} gradient="bg-gradient-to-br from-orange-500 to-amber-500" href="/pharmacy/orders" delay={160} subtitle="Awaiting delivery" glowClass="stat-card-orange" />
+        <StatCard title="Active Offers" target={stats?.offers} icon={Star} gradient="bg-gradient-to-br from-violet-500 to-purple-600" href="/pharmacy/catalogue" delay={240} subtitle="Ask AI about them" glowClass="stat-card-purple" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -346,18 +346,18 @@ export default function PharmacyDashboard() {
             <CardContent className="p-2 pt-2">
               {QUICK_ACTIONS.map(({ label, href, icon: Icon, gradient, desc, badge }, i) => (
                 <Link key={href} href={href}>
-                  <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted cursor-pointer transition-all duration-200 group animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>
-                      <Icon className="h-4 w-4 text-white" />
+                  <div className="row-interactive flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted cursor-pointer group animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-125 group-hover:rotate-6 transition-all duration-300`}>
+                      <Icon className="h-4 w-4 text-white icon-bounce" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-semibold">{label}</p>
-                        {badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300 font-bold uppercase">{badge}</span>}
+                        {badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300 font-bold uppercase animate-blink">{badge}</span>}
                       </div>
                       <p className="text-xs text-muted-foreground">{desc}</p>
                     </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                   </div>
                 </Link>
               ))}

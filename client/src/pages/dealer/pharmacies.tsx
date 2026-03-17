@@ -95,16 +95,16 @@ function PharmacyCard({ pharmacy, index }: { pharmacy: any; index: number }) {
 
   return (
     <Card
-      className="hover-elevate border-0 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden animate-fade-in-up group"
+      className="hover-elevate hover-shine card-interactive stat-card-purple border-0 shadow-sm overflow-hidden animate-fade-in-up group"
       style={{ animationDelay: `${index * 55}ms` }}
       data-testid={`card-pharmacy-${pharmacy._id}`}
     >
-      <div className="h-1 w-full bg-gradient-to-r from-purple-500 to-indigo-600" />
+      <div className="h-1 w-full bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-600 group-hover:from-violet-500 group-hover:to-purple-600 transition-all duration-500" />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-              <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm">
+              <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400 icon-bounce" />
             </div>
             <div className="min-w-0">
               <p className="font-bold text-sm truncate" data-testid={`text-pharmacy-name-${pharmacy._id}`}>{pharmacy.name}</p>
@@ -143,10 +143,10 @@ function PharmacyCard({ pharmacy, index }: { pharmacy: any; index: number }) {
         {pharmacy.preferred_brands?.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {pharmacy.preferred_brands.slice(0, 3).map((b: string) => (
-              <span key={b} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{b}</span>
+              <span key={b} className="badge-pop text-xs px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800 font-medium transition-all duration-200">{b}</span>
             ))}
             {pharmacy.preferred_brands.length > 3 && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">+{pharmacy.preferred_brands.length - 3}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">+{pharmacy.preferred_brands.length - 3}</span>
             )}
           </div>
         )}

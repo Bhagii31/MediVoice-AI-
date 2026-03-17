@@ -207,6 +207,30 @@
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes shine {
+  from { left: -100%; }
+  to   { left: 150%; }
+}
+@keyframes bounceIn {
+  0%   { transform: scale(0.75) rotate(-5deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes ripple {
+  from { transform: scale(0); opacity: 0.5; }
+  to   { transform: scale(3); opacity: 0; }
+}
+@keyframes slideUpBounce {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14%  { transform: scale(1.15); }
+  28%  { transform: scale(1); }
+  42%  { transform: scale(1.1); }
+  70%  { transform: scale(1); }
+}
 
 /* ─── ANIMATION UTILITY CLASSES ──────────────────────────────────── */
 .animate-fade-in      { animation: fadeIn 0.4s ease both; }
@@ -348,6 +372,120 @@
 .portal-card:hover {
   transform: translateY(-4px) scale(1.01);
 }
+
+/* ─── HOVER GLOW ─────────────────────────────────────────────────── */
+.hover-glow-purple {
+  transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(.22,.68,0,1.2);
+}
+.hover-glow-purple:hover {
+  box-shadow: 0 8px 32px rgba(124,58,237,0.22), 0 2px 8px rgba(124,58,237,0.12);
+  transform: translateY(-3px);
+}
+.hover-glow-emerald {
+  transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(.22,.68,0,1.2);
+}
+.hover-glow-emerald:hover {
+  box-shadow: 0 8px 32px rgba(5,150,105,0.22), 0 2px 8px rgba(5,150,105,0.12);
+  transform: translateY(-3px);
+}
+.hover-glow-blue {
+  transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(.22,.68,0,1.2);
+}
+.hover-glow-blue:hover {
+  box-shadow: 0 8px 32px rgba(59,130,246,0.22), 0 2px 8px rgba(59,130,246,0.12);
+  transform: translateY(-3px);
+}
+.hover-glow-orange {
+  transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(.22,.68,0,1.2);
+}
+.hover-glow-orange:hover {
+  box-shadow: 0 8px 32px rgba(234,88,12,0.22), 0 2px 8px rgba(234,88,12,0.12);
+  transform: translateY(-3px);
+}
+
+/* ─── SHINE SWEEP ────────────────────────────────────────────────── */
+.hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+.hover-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 55%;
+  height: 200%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.14), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+.hover-shine:hover::after {
+  animation: shine 0.55s ease;
+}
+
+/* ─── ROW INTERACTIVE ────────────────────────────────────────────── */
+.row-interactive {
+  transition: background-color 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+  cursor: default;
+}
+.row-interactive:hover {
+  background-color: hsl(var(--muted) / 0.6);
+  transform: translateX(3px);
+}
+
+/* ─── CARD INTERACTIVE (lift + shadow) ───────────────────────────── */
+.card-interactive {
+  transition: transform 0.25s cubic-bezier(.22,.68,0,1.2), box-shadow 0.25s ease;
+}
+.card-interactive:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.06);
+}
+
+/* ─── ICON BOUNCE on group hover ─────────────────────────────────── */
+.group:hover .icon-bounce {
+  animation: bounceIn 0.35s cubic-bezier(.22,.68,0,1.2) both;
+}
+.animate-heartbeat {
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+.animate-bounce-in {
+  animation: bounceIn 0.4s cubic-bezier(.22,.68,0,1.2) both;
+}
+
+/* ─── BUTTON POP ─────────────────────────────────────────────────── */
+.btn-pop {
+  transition: transform 0.15s cubic-bezier(.22,.68,0,1.2), box-shadow 0.15s ease;
+}
+.btn-pop:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+.btn-pop:active { transform: translateY(0) scale(0.96); box-shadow: none; }
+
+/* ─── RIPPLE BUTTON ──────────────────────────────────────────────── */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.ripple-btn:active::before { opacity: 1; }
+
+/* ─── STAT CARD GLOW ─────────────────────────────────────────────── */
+.stat-card-purple, .stat-card-emerald, .stat-card-blue,
+.stat-card-orange, .stat-card-red, .stat-card-amber {
+  transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(.22,.68,0,1.2);
+}
+.stat-card-purple:hover  { box-shadow: 0 0 0 2px rgba(124,58,237,0.35), 0 12px 32px rgba(124,58,237,0.18); }
+.stat-card-emerald:hover { box-shadow: 0 0 0 2px rgba(5,150,105,0.35),  0 12px 32px rgba(5,150,105,0.18); }
+.stat-card-blue:hover    { box-shadow: 0 0 0 2px rgba(59,130,246,0.35), 0 12px 32px rgba(59,130,246,0.18); }
+.stat-card-orange:hover  { box-shadow: 0 0 0 2px rgba(234,88,12,0.35),  0 12px 32px rgba(234,88,12,0.18); }
+.stat-card-red:hover     { box-shadow: 0 0 0 2px rgba(239,68,68,0.35),  0 12px 32px rgba(239,68,68,0.18); }
+.stat-card-amber:hover   { box-shadow: 0 0 0 2px rgba(245,158,11,0.35), 0 12px 32px rgba(245,158,11,0.18); }
 
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button {
