@@ -3,10 +3,9 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { DealerSidebar } from "@/components/dealer-sidebar";
-import { PharmacistSidebar } from "@/components/pharmacist-sidebar";
-import { ThemeProvider, ThemeToggle } from "@/components/theme-provider";
+import { DealerTopbar } from "@/components/dealer-topbar";
+import { PharmacyTopbar } from "@/components/pharmacy-topbar";
+import { ThemeProvider } from "@/components/theme-provider";
 import { PharmacyProvider, usePharmacyContext } from "@/lib/pharmacy-context";
 
 import Landing from "@/pages/landing";
@@ -43,7 +42,6 @@ function DealerRouter() {
       <Route path="/dealer/offers" component={Offers} />
       <Route path="/dealer/conversations" component={Conversations} />
       <Route path="/dealer/conversations/:id" component={ConversationDetail} />
-
       <Route component={NotFound} />
     </Switch>
   );
@@ -66,66 +64,30 @@ function PharmacyRouter() {
 }
 
 function DealerLayout() {
-  const sidebarStyle = {
-    "--sidebar-width": "17rem",
-    "--sidebar-width-icon": "3.5rem",
-  };
   return (
-    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full overflow-hidden">
-        <DealerSidebar />
-        <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between px-4 py-2 border-b bg-background/95 backdrop-blur sticky top-0 z-50">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-purple-500"></span>
-                <span className="font-semibold text-sm text-muted-foreground hidden sm:block">Dealer Portal · MediVoice AI</span>
-              </div>
-            </div>
-            <ThemeToggle />
-          </header>
-          <main className="flex-1 overflow-auto">
-            <DealerRouter />
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
+    <div className="flex flex-col h-screen w-full overflow-hidden">
+      <DealerTopbar />
+      <main className="flex-1 overflow-auto">
+        <DealerRouter />
+      </main>
+    </div>
   );
 }
 
 function PharmacyLayoutInner() {
   const { pharmacyId } = usePharmacyContext();
-  const sidebarStyle = {
-    "--sidebar-width": "17rem",
-    "--sidebar-width-icon": "3.5rem",
-  };
 
   if (!pharmacyId) {
     return <PharmacySelector />;
   }
 
   return (
-    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full overflow-hidden">
-        <PharmacistSidebar />
-        <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between px-4 py-2 border-b bg-background/95 backdrop-blur sticky top-0 z-50">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                <span className="font-semibold text-sm text-muted-foreground hidden sm:block">Pharmacist Portal · MediVoice AI</span>
-              </div>
-            </div>
-            <ThemeToggle />
-          </header>
-          <main className="flex-1 overflow-auto">
-            <PharmacyRouter />
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
+    <div className="flex flex-col h-screen w-full overflow-hidden">
+      <PharmacyTopbar />
+      <main className="flex-1 overflow-auto">
+        <PharmacyRouter />
+      </main>
+    </div>
   );
 }
 
