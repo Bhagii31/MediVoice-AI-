@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { LayoutDashboard, Store, Building2, MessageSquare, Package, Pill, ClipboardList, Tag, LogOut, Zap, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, Store, Building2, MessageSquare, Package, Pill, ClipboardList, Tag, LogOut, Zap, AlertTriangle, Radio } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
@@ -39,6 +39,7 @@ export function DealerSidebar() {
     ]},
     { label: "AI Calls", items: [
       { title: "Call Logs", url: "/dealer/conversations", icon: MessageSquare },
+      { title: "Trigger Detections", url: "/dealer/trigger-words", icon: Radio },
     ]},
   ];
 
