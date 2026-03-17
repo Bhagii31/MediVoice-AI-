@@ -19,7 +19,7 @@ function ConversationCard({ convo, index }: { convo: any; index: number }) {
   const snippet = convo.ai_response?.slice(0, 80) || convo.pharmacist_text?.slice(0, 80) || "No content available";
 
   return (
-    <Link href={`/conversations/${convo._id}`}>
+    <Link href={`/dealer/conversations/${convo._id}`}>
       <Card
         className="hover-elevate cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in-up group"
         style={{ animationDelay: `${index * 40}ms` }}
