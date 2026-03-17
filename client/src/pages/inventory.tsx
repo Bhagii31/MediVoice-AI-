@@ -26,12 +26,12 @@ function InventoryRow({ item, index }: { item: any; index: number }) {
 
   return (
     <div
-      className="flex items-center gap-3 py-4 px-4 border-b last:border-0 hover:bg-muted/40 transition-colors animate-fade-in-up group"
+      className="row-interactive flex items-center gap-3 py-4 px-4 border-b last:border-0 animate-fade-in-up group hover:pl-5"
       style={{ animationDelay: `${index * 35}ms` }}
       data-testid={`row-inventory-${item._id}`}
     >
-      <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${cfg.bg}`}>
-        <Package className="h-5 w-5" />
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm ${cfg.bg}`}>
+        <Package className="h-5 w-5 icon-bounce" />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -50,7 +50,7 @@ function InventoryRow({ item, index }: { item: any; index: number }) {
         </div>
         <div className="flex items-center gap-2 mt-1.5">
           <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div className={`h-full rounded-full transition-all ${cfg.bar}`} style={{ width: `${fillPct}%` }} />
+            <div className={`h-full rounded-full transition-all duration-700 ${cfg.bar}`} style={{ width: `${fillPct}%`, transitionDelay: `${index * 35 + 200}ms` }} />
           </div>
           {item.order_limit && <span className="text-xs text-muted-foreground">Min: {item.order_limit}</span>}
         </div>

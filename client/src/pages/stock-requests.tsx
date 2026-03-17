@@ -41,11 +41,11 @@ function OrderCard({ request, index }: { request: any; index: number }) {
 
   return (
     <Card
-      className="hover-elevate border-0 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden animate-fade-in-up"
+      className="hover-elevate hover-shine border-0 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden animate-fade-in-up group"
       style={{ animationDelay: `${index * 60}ms` }}
       data-testid={`card-order-${request._id}`}
     >
-      <div className={`h-1 w-full ${request.status === "Delivered" ? "bg-emerald-500" : request.status === "Processing" ? "bg-blue-500" : request.status === "Cancelled" ? "bg-red-500" : "bg-amber-500"}`} />
+      <div className={`h-1.5 w-full transition-all duration-300 group-hover:h-2 ${request.status === "Delivered" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : request.status === "Processing" ? "bg-gradient-to-r from-blue-500 to-cyan-500" : request.status === "Cancelled" ? "bg-gradient-to-r from-red-500 to-rose-500" : "bg-gradient-to-r from-amber-500 to-orange-500"}`} />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">

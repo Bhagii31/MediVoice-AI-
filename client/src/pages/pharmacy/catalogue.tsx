@@ -141,17 +141,17 @@ function MedicineGridCard({ medicine, index, onClick }: { medicine: any; index: 
 
   return (
     <Card
-      className="hover-elevate border-0 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden animate-fade-in-up group cursor-pointer"
+      className="hover-elevate hover-shine border-0 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden animate-fade-in-up group cursor-pointer"
       style={{ animationDelay: `${index * 40}ms` }}
       onClick={onClick}
       data-testid={`card-medicine-${medicine._id}`}
     >
-      <div className={`h-1.5 w-full ${!inStock ? "bg-red-400" : isLow ? "bg-amber-400" : "bg-gradient-to-r from-emerald-400 to-teal-500"}`} />
+      <div className={`h-1.5 w-full transition-all duration-300 group-hover:h-2 ${!inStock ? "bg-gradient-to-r from-red-500 to-rose-500" : isLow ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-emerald-400 to-teal-500"}`} />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${!inStock ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-amber-100 dark:bg-amber-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
-              <Pill className={`h-5 w-5 ${!inStock ? "text-red-500" : isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`} />
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm ${!inStock ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-amber-100 dark:bg-amber-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
+              <Pill className={`h-5 w-5 icon-bounce ${!inStock ? "text-red-500" : isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`} />
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-sm truncate" data-testid={`text-medicine-name-${medicine._id}`}>{medicine.name}</p>
@@ -204,13 +204,13 @@ function MedicineListRow({ medicine, index, onClick }: { medicine: any; index: n
 
   return (
     <div
-      className="flex items-center gap-3 py-3.5 px-4 border-b last:border-0 hover:bg-muted/50 transition-colors animate-fade-in-up group cursor-pointer"
+      className="row-interactive flex items-center gap-3 py-3.5 px-4 border-b last:border-0 animate-fade-in-up group cursor-pointer hover:pl-5"
       style={{ animationDelay: `${index * 30}ms` }}
       onClick={onClick}
       data-testid={`row-medicine-${medicine._id}`}
     >
-      <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${!inStock ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-amber-100 dark:bg-amber-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
-        <Pill className={`h-4 w-4 ${!inStock ? "text-red-500" : isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`} />
+      <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm ${!inStock ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-amber-100 dark:bg-amber-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
+        <Pill className={`h-4 w-4 icon-bounce ${!inStock ? "text-red-500" : isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">

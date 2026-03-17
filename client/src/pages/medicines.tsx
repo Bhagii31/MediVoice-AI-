@@ -34,12 +34,12 @@ function MedicineCard({ medicine, index }: { medicine: any; index: number }) {
 
   return (
     <div
-      className="flex items-center gap-3 py-3.5 px-4 border-b last:border-0 hover:bg-muted/40 transition-colors animate-fade-in-up group"
+      className="row-interactive flex items-center gap-3 py-3.5 px-4 border-b last:border-0 animate-fade-in-up group hover:pl-5"
       style={{ animationDelay: `${index * 40}ms` }}
       data-testid={`row-medicine-${medicine._id}`}
     >
-      <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 ${medicine.stock_quantity <= 0 ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-orange-100 dark:bg-orange-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
-        <Pill className={`h-5 w-5 ${medicine.stock_quantity <= 0 ? "text-red-600 dark:text-red-400" : isLow ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400"}`} />
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm ${medicine.stock_quantity <= 0 ? "bg-red-100 dark:bg-red-900/50" : isLow ? "bg-orange-100 dark:bg-orange-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
+        <Pill className={`h-5 w-5 icon-bounce ${medicine.stock_quantity <= 0 ? "text-red-600 dark:text-red-400" : isLow ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400"}`} />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -60,8 +60,8 @@ function MedicineCard({ medicine, index }: { medicine: any; index: number }) {
           <div className="flex items-center gap-2 mt-1.5">
             <div className="flex-1 max-w-24 h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${medicine.stock_quantity <= 0 ? "bg-red-500" : isLow ? "bg-orange-500" : "bg-emerald-500"}`}
-                style={{ width: `${stockPct}%` }}
+                className={`h-full rounded-full transition-all duration-700 ${medicine.stock_quantity <= 0 ? "bg-red-500" : isLow ? "bg-orange-500" : "bg-emerald-500"}`}
+                style={{ width: `${stockPct}%`, transitionDelay: `${index * 40 + 200}ms` }}
               />
             </div>
             <span className={`text-xs font-medium ${isLow ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground"}`}>

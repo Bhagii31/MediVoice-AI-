@@ -80,13 +80,13 @@ export default function PharmacyConversations() {
           {conversations.map((c: any, i: number) => (
             <Link key={c._id} href={`/pharmacy/conversations/${c._id}`}>
               <Card
-                className="hover-elevate cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in-up group"
+                className="hover-elevate hover-shine cursor-pointer border-0 shadow-sm hover:shadow-lg transition-all duration-300 animate-fade-in-up group stat-card-purple"
                 style={{ animationDelay: `${i * 40}ms` }}
                 data-testid={`card-conversation-${c._id}`}
               >
                 <CardContent className="flex items-center gap-4 py-4 px-4">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-sm">
-                    <Bot className="h-5 w-5 text-white" />
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm">
+                    <Bot className="h-5 w-5 text-white icon-bounce" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate" data-testid={`text-convo-pharmacy-${c._id}`}>

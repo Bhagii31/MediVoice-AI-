@@ -21,13 +21,13 @@ function ConversationCard({ convo, index }: { convo: any; index: number }) {
   return (
     <Link href={`/dealer/conversations/${convo._id}`}>
       <Card
-        className="hover-elevate cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in-up group"
+        className="hover-elevate hover-shine cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in-up group stat-card-purple"
         style={{ animationDelay: `${index * 40}ms` }}
         data-testid={`card-conversation-${convo._id}`}
       >
         <CardContent className="flex items-center gap-4 py-4 px-4">
-          <div className="h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-            <Mic className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+          <div className="h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm">
+            <Mic className="h-5 w-5 text-violet-600 dark:text-violet-400 icon-bounce" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">

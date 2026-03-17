@@ -40,20 +40,20 @@ function OfferCard({ offer, index }: { offer: any; index: number }) {
 
   return (
     <Card
-      className="hover-elevate border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden animate-fade-in-up group"
+      className="hover-elevate hover-shine border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden animate-fade-in-up group"
       style={{ animationDelay: `${index * 60}ms` }}
       data-testid={`card-offer-${offer._id}`}
     >
       <div className={`relative bg-gradient-to-br ${cardGradient} p-4 pb-5 overflow-hidden`}>
-        <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-16 h-16 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700" />
+        <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
         <div className="relative z-10">
           <div className="flex items-start justify-between">
-            <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Tag className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-125 group-hover:rotate-12 transition-all duration-300 shadow-sm">
+              <Tag className="h-5 w-5 text-white icon-bounce" />
             </div>
             {offer.discount_percent && (
-              <div className="flex items-baseline gap-0.5 text-white drop-shadow">
+              <div className="flex items-baseline gap-0.5 text-white drop-shadow group-hover:scale-110 transition-transform duration-300">
                 <span className="text-3xl font-black leading-none">{offer.discount_percent}</span>
                 <Percent className="h-4 w-4" />
               </div>
