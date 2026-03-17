@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Phone, PhoneCall, Clock, Bot, ArrowRight,
   PhoneOff, Mic, Sparkles, MessageSquare, Info, ShieldCheck,
-  ChevronRight, Star, Zap, CheckCircle, AlertCircle, Loader2, Smartphone, Monitor
+  ChevronRight, Star, Zap
 } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePharmacyContext } from "@/lib/pharmacy-context";
-import { apiRequest } from "@/lib/queryClient";
 
 function WaveBar({ height, delay }: { height: number; delay: number }) {
   return (
@@ -43,34 +41,7 @@ const WHAT_TO_ASK = [
 ];
 
 function CallBotHero({ twilioNumber }: { twilioNumber: string }) {
-  const { pharmacyId, pharmacyName } = usePharmacyContext();
-  const [mode, setMode] = useState<"mobile" | "desktop">("desktop");
-  const [phone, setPhone] = useState("");
-  const [callResult, setCallResult] = useState<{ success: boolean; message: string } | null>(null);
   const [callActive, setCallActive] = useState(false);
-
-  const callMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/twilio/outbound", {
-        to: phone.trim(),
-        pharmacyName: pharmacyName || "Pharmacist",
-        reason: "stock check and medicine enquiry",
-        ...(pharmacyId ? { pharmacyId } : {}),
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        setCallResult({ success: true, message: "Your phone will ring in a few seconds. Pick up to speak with MediVoice AI." });
-        setPhone("");
-      } else {
-        setCallResult({ success: false, message: data.error || "Failed to initiate call." });
-      }
-    },
-    onError: (err: any) => {
-      setCallResult({ success: false, message: err.message || "Could not reach the server." });
-    },
-  });
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 shadow-2xl animate-scale-in">
@@ -91,95 +62,50 @@ function CallBotHero({ twilioNumber }: { twilioNumber: string }) {
           </span>
         </div>
 
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex items-start justify-between gap-4 mb-8">
           <div>
             <h2 className="text-3xl font-black text-white mb-2 leading-tight">
               Call MediVoice AI
             </h2>
             <p className="text-emerald-100 text-sm leading-relaxed max-w-sm">
-              Connect to your AI bot by phone. Choose how you want to connect below.
+              Tap the button below to connect directly to your MediVoice AI bot.
+              Ask about stock, pricing, reorders, and active offers.
             </p>
           </div>
           <div className="relative flex-shrink-0">
             <PulseRing />
             <div className="relative h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl z-10">
-              <Mic className={`h-10 w-10 text-white ${callActive || callMutation.isPending ? "animate-pulse" : ""}`} />
+              <Mic className={`h-10 w-10 text-white ${callActive ? "animate-pulse" : ""}`} />
             </div>
           </div>
         </div>
 
-        {/* Mode switcher */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => { setMode("desktop"); setCallResult(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${mode === "desktop" ? "bg-white text-emerald-700 shadow-md" : "bg-white/15 text-white hover:bg-white/25"}`}
-            data-testid="tab-ai-calls-you"
-          >
-            <Monitor className="h-3.5 w-3.5" /> AI Calls You
-          </button>
-          <button
-            onClick={() => { setMode("mobile"); setCallResult(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${mode === "mobile" ? "bg-white text-emerald-700 shadow-md" : "bg-white/15 text-white hover:bg-white/25"}`}
-            data-testid="tab-call-from-phone"
-          >
-            <Smartphone className="h-3.5 w-3.5" /> Call from Phone
-          </button>
-        </div>
+        <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-5 space-y-5 border border-white/25 shadow-inner">
+          <div className="text-center">
+            <p className="text-emerald-200 text-xs uppercase tracking-widest mb-3 font-semibold">MediVoice AI Hotline</p>
+            <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-5 py-3">
+                <Phone className="h-5 w-5 text-emerald-300" />
+                <span className="text-white font-bold text-base">Tap below to connect</span>
+              </div>
+            </div>
+          </div>
 
-        <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-5 space-y-4 border border-white/25 shadow-inner">
-          <div className="flex items-end gap-1 justify-center h-10 py-1">
-            {[14, 22, 18, 30, 16, 36, 14, 28, 22, 34, 14, 26, 20, 30, 18].map((h, i) => (
+          <div className="flex items-end gap-1 justify-center h-12 py-1">
+            {[18, 28, 14, 36, 22, 40, 18, 32, 26, 38, 16, 30, 24, 34, 20].map((h, i) => (
               <WaveBar key={i} height={h} delay={i * 0.06} />
             ))}
           </div>
 
-          {mode === "desktop" ? (
-            <>
-              <p className="text-emerald-200 text-xs text-center font-medium">Enter your phone number — MediVoice AI will call you</p>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600 z-10" />
-                  <Input
-                    type="tel"
-                    placeholder="+1 (732) 000-0000"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && phone.trim() && callMutation.mutate()}
-                    className="pl-9 bg-white/95 border-0 text-gray-800 placeholder:text-gray-400 font-medium rounded-xl h-12"
-                    data-testid="input-phone-number"
-                  />
-                </div>
-                <Button
-                  onClick={() => { setCallResult(null); callMutation.mutate(); }}
-                  disabled={callMutation.isPending || !phone.trim()}
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-black px-5 h-12 rounded-xl shadow-lg transition-all duration-200 gap-2 disabled:opacity-60"
-                  data-testid="button-request-call"
-                >
-                  {callMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Calling…</> : <><PhoneCall className="h-4 w-4" /> Call Me</>}
-                </Button>
-              </div>
-              {callResult && (
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in-up ${callResult.success ? "bg-emerald-500/30 text-white border border-emerald-400/40" : "bg-red-500/30 text-white border border-red-400/40"}`}
-                  data-testid="status-call-result">
-                  {callResult.success ? <CheckCircle className="h-4 w-4 flex-shrink-0 text-emerald-300" /> : <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-300" />}
-                  {callResult.message}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <p className="text-emerald-200 text-xs text-center font-medium">Open on your mobile phone and tap the button below</p>
-              <a href={`tel:${twilioNumber}`} className="block" onClick={() => setCallActive(true)}>
-                <Button
-                  className="w-full gap-2 bg-white text-emerald-700 hover:bg-emerald-50 font-black py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-base"
-                  data-testid="button-dial-now"
-                >
-                  <PhoneCall className="h-5 w-5" />
-                  {callActive ? "Connecting to AI Bot…" : "Call AI Bot Now"}
-                </Button>
-              </a>
-            </>
-          )}
+          <a href={`tel:${twilioNumber}`} className="block" onClick={() => setCallActive(true)}>
+            <Button
+              className="w-full gap-2 bg-white text-emerald-700 hover:bg-emerald-50 font-black py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-base"
+              data-testid="button-dial-now"
+            >
+              <PhoneCall className="h-5 w-5" />
+              {callActive ? "Connecting to AI Bot…" : "Call AI Bot Now"}
+            </Button>
+          </a>
 
           <div className="flex items-center justify-center gap-2 text-xs text-emerald-200">
             <Sparkles className="h-3 w-3" />
