@@ -10,7 +10,7 @@ import { StockRequest } from "./models/StockRequest";
 import { Offer } from "./models/Offer";
 import { Personalization } from "./models/Personalization";
 import { Schedule } from "./models/Schedule";
-import { TriggerWord } from "./models/TriggerWord";
+
 import OpenAI from "openai";
 
 function getOpenAI(): OpenAI {
@@ -332,47 +332,6 @@ export async function registerRoutes(
       res.status(201).json(conversation);
     } catch (err) {
       res.status(400).json({ error: "Failed to create conversation" });
-    }
-  });
-
-  // ─── TRIGGER WORD DETECTIONS ──────────────────────────────────────────
-  app.get("/api/trigger-words", async (req, res) => {
-    if (!isMongoConnected()) return res.json({ detections: [], total: 0 });
-    try {
-      const { pharmacyId, limit = 100, page = 1 } = req.query;
-      const filter: any = {};
-      if (pharmacyId) filter.pharmacyId = pharmacyId;
-      const skip = (Number(page) - 1) * Number(limit);
-      const [detections, total] = await Promise.all([
-        TriggerWord.find(filter).sort({ timestamp: -1 }).skip(skip).limit(Number(limit)).lean(),
-        TriggerWord.countDocuments(filter),
-      ]);
-      res.json({ detections, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)) });
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch trigger detections" });
-    }
-  });
-
-  app.post("/api/trigger-words", async (req, res) => {
-    if (!requireMongo(res)) return;
-    try {
-      const { pharmacyId, pharmacyName, triggerWord, confidence, context, callInitiated } = req.body;
-      if (!pharmacyName || !triggerWord) {
-        return res.status(400).json({ error: "pharmacyName and triggerWord are required" });
-      }
-      const detection = new TriggerWord({
-        pharmacyId,
-        pharmacyName,
-        triggerWord,
-        confidence: confidence !== undefined ? Number(confidence) : undefined,
-        context,
-        callInitiated: callInitiated ?? false,
-        timestamp: new Date(),
-      });
-      await detection.save();
-      res.status(201).json({ success: true, detection });
-    } catch (err) {
-      res.status(400).json({ error: "Failed to save trigger detection" });
     }
   });
 

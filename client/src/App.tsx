@@ -15,7 +15,7 @@ import NotFound from "@/pages/not-found";
 import DealerDashboard from "@/pages/dealer/dashboard";
 import DealerPortal from "@/pages/dealer-portal";
 import PharmaciesPage from "@/pages/dealer/pharmacies";
-import TriggerWordsPage from "@/pages/dealer/trigger-words";
+
 import Medicines from "@/pages/medicines";
 import Inventory from "@/pages/inventory";
 import StockRequests from "@/pages/stock-requests";
@@ -43,7 +43,7 @@ function DealerRouter() {
       <Route path="/dealer/offers" component={Offers} />
       <Route path="/dealer/conversations" component={Conversations} />
       <Route path="/dealer/conversations/:id" component={ConversationDetail} />
-      <Route path="/dealer/trigger-words" component={TriggerWordsPage} />
+
       <Route component={NotFound} />
     </Switch>
   );
