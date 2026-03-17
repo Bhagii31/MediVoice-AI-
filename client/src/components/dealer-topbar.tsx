@@ -25,40 +25,37 @@ export function DealerTopbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 h-12 border-b bg-background/98 backdrop-blur flex items-center px-5 gap-0">
+    <header className="relative sticky top-0 z-50 h-14 bg-gray-950 border-b border-gray-800 flex items-center px-6 gap-0 shadow-sm">
 
       <Link href="/dealer">
-        <div className="flex items-center gap-2.5 cursor-pointer group flex-shrink-0 mr-5" data-testid="link-dealer-brand">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+        <div className="flex items-center gap-2.5 cursor-pointer group flex-shrink-0 mr-6" data-testid="link-dealer-brand">
+          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-md group-hover:shadow-purple-500/30 group-hover:scale-105 transition-all">
             <Store className="text-white h-3.5 w-3.5" />
           </div>
-          <span className="font-semibold text-sm">MediVoice AI</span>
+          <span className="font-semibold text-sm text-white tracking-tight">MediVoice AI</span>
         </div>
       </Link>
 
-      <div className="h-4 w-px bg-border mr-5 flex-shrink-0 hidden md:block" />
+      <div className="h-4 w-px bg-gray-700 mr-6 flex-shrink-0 hidden md:block" />
 
-      <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium mr-5 flex-shrink-0">
-        <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-        Dealer
+      <span className="hidden md:inline-flex items-center gap-1.5 mr-6 flex-shrink-0">
+        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/25 tracking-wide">
+          Dealer
+        </span>
       </span>
 
-      <nav className="hidden md:flex items-center gap-0 flex-1 overflow-x-auto no-scrollbar">
+      <nav className="hidden md:flex items-center gap-0 flex-1 overflow-x-auto no-scrollbar h-14">
         {NAV_ITEMS.map(item => {
           const isActive = item.exact ? location === item.url : location.startsWith(item.url);
           const badge = item.badgeKey ? counts[item.badgeKey] : 0;
-          const badgeCls = item.badgeColor === "amber"
-            ? "bg-amber-500"
-            : item.badgeColor === "orange"
-            ? "bg-orange-500"
-            : "bg-red-500";
+          const badgeCls = item.badgeColor === "amber" ? "bg-amber-500" : "bg-orange-500";
           return (
             <Link key={item.url} href={item.url}>
               <div
-                className={`relative flex items-center gap-1.5 px-3 h-12 text-[13px] font-medium transition-colors duration-150 cursor-pointer select-none whitespace-nowrap border-b-2 ${
+                className={`relative flex items-center gap-1.5 px-3 h-14 text-[13px] font-medium transition-colors duration-150 cursor-pointer select-none whitespace-nowrap border-b-2 ${
                   isActive
-                    ? "text-purple-600 dark:text-purple-400 border-purple-500"
-                    : "text-muted-foreground hover:text-foreground border-transparent hover:border-border"
+                    ? "text-white border-purple-400"
+                    : "text-gray-400 hover:text-gray-100 border-transparent"
                 }`}
                 data-testid={`link-dealer-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
@@ -74,11 +71,13 @@ export function DealerTopbar() {
         })}
       </nav>
 
-      <div className="ml-auto flex items-center gap-1 flex-shrink-0">
-        <ThemeToggle />
+      <div className="ml-auto flex items-center gap-0.5 flex-shrink-0">
+        <div className="[&_button]:text-gray-400 [&_button:hover]:text-white [&_button:hover]:bg-gray-800 [&_button]:rounded-lg">
+          <ThemeToggle />
+        </div>
         <Link href="/">
           <button
-            className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
             data-testid="link-dealer-exit"
             title="Exit portal"
           >
@@ -86,7 +85,7 @@ export function DealerTopbar() {
           </button>
         </Link>
         <button
-          className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors"
+          className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
           onClick={() => setMobileOpen(o => !o)}
           data-testid="button-mobile-menu"
         >
@@ -95,16 +94,18 @@ export function DealerTopbar() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden absolute top-12 left-0 right-0 border-b bg-background shadow-lg px-3 py-2 space-y-0.5 z-50 animate-fade-in-down">
+        <div className="md:hidden absolute top-14 left-0 right-0 bg-gray-950 border-b border-gray-800 shadow-xl px-4 py-2 space-y-0.5 z-50">
           {NAV_ITEMS.map(item => {
             const isActive = item.exact ? location === item.url : location.startsWith(item.url);
             const badge = item.badgeKey ? counts[item.badgeKey] : 0;
-            const badgeCls = item.badgeColor === "amber" ? "bg-amber-500" : item.badgeColor === "orange" ? "bg-orange-500" : "bg-red-500";
+            const badgeCls = item.badgeColor === "amber" ? "bg-amber-500" : "bg-orange-500";
             return (
               <Link key={item.url} href={item.url}>
                 <div
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                    isActive ? "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    isActive
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-400 hover:bg-gray-800/60 hover:text-gray-100"
                   }`}
                   onClick={() => setMobileOpen(false)}
                   data-testid={`link-dealer-mobile-${item.title.toLowerCase().replace(/\s+/g, "-")}`}

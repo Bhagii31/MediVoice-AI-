@@ -65,7 +65,7 @@ function PharmacyRouter() {
 
 function DealerLayout() {
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden">
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
       <DealerTopbar />
       <main className="flex-1 overflow-auto">
         <DealerRouter />
@@ -82,7 +82,7 @@ function PharmacyLayoutInner() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden">
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
       <PharmacyTopbar />
       <main className="flex-1 overflow-auto">
         <PharmacyRouter />
