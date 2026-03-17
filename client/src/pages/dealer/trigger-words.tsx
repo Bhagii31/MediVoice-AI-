@@ -237,22 +237,6 @@ export default function TriggerWordsPage() {
         </CardContent>
       </Card>
 
-      {/* Pi integration guide */}
-      <Card className="border-0 shadow-sm bg-muted/40 animate-fade-in-up">
-        <CardContent className="p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Raspberry Pi Integration</p>
-          <p className="text-xs text-muted-foreground mb-2">From the Pi, POST to this endpoint when a trigger word is detected:</p>
-          <pre className="text-xs bg-background rounded-lg p-3 border border-border overflow-x-auto text-foreground leading-relaxed">{`POST /api/trigger-words
-{
-  "pharmacyName": "CVS - Newark",
-  "pharmacyId": "optional-mongo-id",
-  "triggerWord": "prescription",
-  "confidence": 0.92,
-  "context": "...short snippet of speech...",
-  "callInitiated": true
-}`}</pre>
-        </CardContent>
-      </Card>
     </div>
   );
 }
