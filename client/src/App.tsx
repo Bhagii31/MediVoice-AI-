@@ -30,6 +30,7 @@ import PharmacyVoice from "@/pages/pharmacy/voice";
 import PharmacyConversations from "@/pages/pharmacy/conversations";
 import PharmacyInvoices from "@/pages/pharmacy/invoices";
 import PharmacySelector from "@/pages/pharmacy/selector";
+import PharmacyPaymentMethods from "@/pages/pharmacy/payment-methods";
 
 function DealerRouter() {
   return (
@@ -58,6 +59,7 @@ function PharmacyRouter() {
       <Route path="/pharmacy/voice" component={PharmacyVoice} />
       <Route path="/pharmacy/conversations" component={PharmacyConversations} />
       <Route path="/pharmacy/conversations/:id" component={ConversationDetail} />
+      <Route path="/pharmacy/payment-methods" component={PharmacyPaymentMethods} />
       <Route component={NotFound} />
     </Switch>
   );

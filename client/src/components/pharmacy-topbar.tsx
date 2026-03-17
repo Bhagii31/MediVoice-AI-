@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { LogOut, Building2, Menu, X, ArrowLeftRight } from "lucide-react";
+import { LogOut, Building2, Menu, X, ArrowLeftRight, Wallet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/theme-provider";
 import { usePharmacyContext } from "@/lib/pharmacy-context";
@@ -31,6 +31,7 @@ export function PharmacyTopbar() {
     { title: "Catalogue",    url: "/pharmacy/catalogue" },
     { title: "Call Bot",     url: "/pharmacy/voice",         highlight: true },
     { title: "Call History", url: "/pharmacy/conversations" },
+    { title: "Payments",     url: "/pharmacy/payment-methods" },
   ];
 
   return (
