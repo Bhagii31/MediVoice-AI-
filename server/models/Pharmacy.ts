@@ -10,6 +10,9 @@ const pharmacySchema = new mongoose.Schema({
   preferred_brands: [{ type: String }],
   discount_tier: { type: String, enum: ["Gold", "Silver", "Bronze"], default: "Silver" },
   last_order_date: { type: String },
-}, { collection: "pharmacists", strict: false });
+}, { collection: "Pharmacies", strict: false });
 
-export const Pharmacy = mongoose.models.Pharmacy || mongoose.model("Pharmacy", pharmacySchema, "pharmacists");
+if ((mongoose.models as any).Pharmacy) {
+  delete (mongoose.models as any).Pharmacy;
+}
+export const Pharmacy = mongoose.model("Pharmacy", pharmacySchema, "Pharmacies");
