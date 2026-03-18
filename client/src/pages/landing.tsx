@@ -223,35 +223,58 @@ export default function Landing() {
     <div className="min-h-screen bg-background flex flex-col">
 
       {/* ══════════════ NAVBAR ══════════════ */}
-      <header className="sticky top-0 z-50 border-b border-white/8 bg-gray-950/95 backdrop-blur-lg flex items-center justify-between px-6 h-14 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-shrink-0">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <Mic className="h-4 w-4 text-white" />
+      <header className="sticky top-0 z-50 bg-gray-950/90 backdrop-blur-xl border-b border-white/6 flex-shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                <Mic className="h-[18px] w-[18px] text-white" />
+              </div>
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-gray-950 animate-blink" />
             </div>
-            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-gray-950 animate-blink" />
+            <div className="flex flex-col leading-none gap-0.5">
+              <span className="font-black text-[15px] text-white tracking-tight">MediVoice AI</span>
+              <span className="text-[10px] text-gray-600 font-medium tracking-wide">PHARMACY INTELLIGENCE</span>
+            </div>
           </div>
-          <div>
-            <span className="font-black text-sm text-white leading-none block">MediVoice AI</span>
-            <span className="text-[10px] text-gray-500 leading-none">Pharmacy Intelligence Platform</span>
-          </div>
+
+          {/* Nav links + CTAs */}
+          <nav className="flex items-center gap-2">
+            {/* Status chip */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/8 border border-emerald-500/15 mr-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-blink flex-shrink-0" />
+              <span className="text-[10px] font-semibold text-emerald-400 tracking-wide">AI ONLINE</span>
+            </div>
+
+            {/* Dealer — outline pill */}
+            <Link href="/dealer">
+              <button
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-purple-500/30 text-purple-400 text-xs font-semibold hover:bg-purple-500/10 hover:border-purple-500/50 hover:text-purple-300 transition-all duration-200"
+                data-testid="link-dealer-header"
+              >
+                <Store className="h-3.5 w-3.5" />
+                Dealer
+              </button>
+            </Link>
+
+            {/* Pharmacist — solid pill */}
+            <Link href="/pharmacy">
+              <button
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/22 hover:border-emerald-500/45 hover:text-emerald-300 transition-all duration-200"
+                data-testid="link-pharmacy-header"
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                Pharmacist
+              </button>
+            </Link>
+
+            <div className="w-px h-5 bg-white/8 mx-1" />
+            <div className="[&_button]:text-gray-500 [&_button:hover]:text-gray-300">
+              <ThemeToggle />
+            </div>
+          </nav>
         </div>
-        <nav className="flex items-center gap-1">
-          <Link href="/dealer">
-            <button className="text-xs font-medium text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/6" data-testid="link-dealer-header">
-              Dealer Portal
-            </button>
-          </Link>
-          <Link href="/pharmacy">
-            <button className="text-xs font-medium text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/6" data-testid="link-pharmacy-header">
-              Pharmacist Portal
-            </button>
-          </Link>
-          <div className="w-px h-4 bg-white/10 mx-1" />
-          <div className="[&_button]:text-gray-400">
-            <ThemeToggle />
-          </div>
-        </nav>
       </header>
 
       {/* ══════════════ HERO ══════════════ */}
