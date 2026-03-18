@@ -50,6 +50,9 @@ export function PharmacistSidebar() {
       { title: "Call Bot", url: "/pharmacy/voice", icon: Phone, highlight: true },
       { title: "Call History", url: "/pharmacy/conversations", icon: MessageSquare },
     ]},
+    { label: "Account", items: [
+      { title: "Payment Methods", url: "/pharmacy/payment-methods", icon: FileText },
+    ]},
   ];
 
   return (

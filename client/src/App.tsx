@@ -3,6 +3,9 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { DealerSidebar } from "@/components/dealer-sidebar";
+import { PharmacistSidebar } from "@/components/pharmacist-sidebar";
 import { DealerTopbar } from "@/components/dealer-topbar";
 import { PharmacyTopbar } from "@/components/pharmacy-topbar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -12,7 +15,6 @@ import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
 import DealerDashboard from "@/pages/dealer/dashboard";
-import DealerPortal from "@/pages/dealer-portal";
 import PharmaciesPage from "@/pages/dealer/pharmacies";
 
 import Medicines from "@/pages/medicines";
@@ -67,12 +69,17 @@ function PharmacyRouter() {
 
 function DealerLayout() {
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
-      <DealerTopbar />
-      <main className="flex-1 overflow-auto">
-        <DealerRouter />
-      </main>
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
+        <DealerSidebar />
+        <SidebarInset className="flex flex-col flex-1 overflow-hidden">
+          <DealerTopbar />
+          <main className="flex-1 overflow-auto">
+            <DealerRouter />
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
 
@@ -84,12 +91,17 @@ function PharmacyLayoutInner() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
-      <PharmacyTopbar />
-      <main className="flex-1 overflow-auto">
-        <PharmacyRouter />
-      </main>
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
+        <PharmacistSidebar />
+        <SidebarInset className="flex flex-col flex-1 overflow-hidden">
+          <PharmacyTopbar />
+          <main className="flex-1 overflow-auto">
+            <PharmacyRouter />
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
 
@@ -103,7 +115,6 @@ function PharmacyLayout() {
 
 function AppRouter() {
   const [location] = useLocation();
-
   if (location === "/") return <Landing />;
   if (location.startsWith("/dealer")) return <DealerLayout />;
   if (location.startsWith("/pharmacy")) return <PharmacyLayout />;
