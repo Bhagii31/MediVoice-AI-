@@ -328,8 +328,8 @@ export default function PharmacyCatalogue() {
           ].map(f => (
             <button
               key={f.key}
-              onClick={() => setStockFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${stockFilter === f.key ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              onClick={() => { setStockFilter(f.key); if (f.key === "all") setCategoryFilter("all"); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${stockFilter === f.key && (f.key !== "all" || categoryFilter === "all") ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
               data-testid={`button-stock-filter-${f.key}`}
             >
               {f.label}
