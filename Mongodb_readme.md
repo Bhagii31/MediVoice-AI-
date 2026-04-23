@@ -451,6 +451,32 @@ Stores live conversations but it deletes after outgoing calls are done regarding
   "\_\_v": 0  
 }
 
+### **4.10 Keyword\_Extractions Collection**
+
+**Sample data:**  
+{
+  "pharmacy_name": null,
+  "pharmacy_id": null,
+  "medicine": "aspirin",
+  "intent": "stock_low",
+  "summary": "Staff mentioned that aspirin stock is running low.",
+  "transcript": "I think we are running out of aspirin.",
+  "language": "es",
+  "source": "mediavoice_listener",
+  "created_at": {
+    "$date": "2026-03-26T02:43:22.687Z"
+  },
+  "auto_call_status": "failed",
+  "picked_at": {
+    "$date": "2026-04-22T22:58:10.495Z"
+  },
+  "auto_call_error": "can't subtract offset-naive and offset-aware datetimes",
+  "processed_at": {
+    "$date": "2026-04-22T22:58:10.531Z"
+  }
+}
+
+
 ## **5\. Database Setup (Step-by-Step)**
 
 ### **Step 1: Create MongoDB Atlas Cluster**
