@@ -51,11 +51,11 @@ const INVENTORY_LABELS: Record<string, string> = {
 };
 
 const QUICK_ACTIONS = [
-  { label: "Pharmacies", desc: "Manage partner pharmacies", href: "/dealer/pharmacies", icon: Building2, gradient: "from-purple-500 to-indigo-600" },
-  { label: "Medicines", desc: "Update catalogue & pricing", href: "/dealer/medicines", icon: Pill, gradient: "from-green-500 to-emerald-600" },
-  { label: "Orders", desc: "Process pending requests", href: "/dealer/orders", icon: ClipboardList, gradient: "from-orange-500 to-red-500" },
-  { label: "Offers", desc: "Create promotions & deals", href: "/dealer/offers", icon: Tag, gradient: "from-blue-500 to-cyan-500" },
-  { label: "Call Logs", desc: "Review AI conversations", href: "/dealer/conversations", icon: MessageSquare, gradient: "from-violet-500 to-purple-600" },
+  { label: "Pharmacies", desc: "Manage partner pharmacies", href: "/dealer/pharmacies", icon: Building2, gradient: "from-violet-500 to-purple-600" },
+  { label: "Medicines", desc: "Update catalogue & pricing", href: "/dealer/medicines", icon: Pill, gradient: "from-violet-500 to-purple-600" },
+  { label: "Orders", desc: "Process pending requests", href: "/dealer/orders", icon: ClipboardList, gradient: "from-blue-500 to-indigo-600" },
+  { label: "Offers", desc: "Create promotions & deals", href: "/dealer/offers", icon: Tag, gradient: "from-blue-500 to-indigo-600" },
+  { label: "Call Logs", desc: "Review call conversations", href: "/dealer/conversations", icon: MessageSquare, gradient: "from-violet-500 to-purple-600" },
 ];
 
 const OUTBOUND_STEPS = [
@@ -422,40 +422,24 @@ export default function DealerDashboard() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4 animate-float-slow" />
           <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/4 animate-float" />
-          <div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2 animate-float delay-300" />
         </div>
         <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-xs text-purple-200 font-bold uppercase tracking-wider">{greeting()}, Dealer</span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/30">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-blink" />
-                <span className="text-[10px] font-black text-white uppercase tracking-wide">Live</span>
+            <h1 className="text-2xl font-bold text-white tracking-tight" data-testid="text-page-title">{greeting()}</h1>
+            {(stats?.lowStock || 0) > 0 && (
+              <div className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full bg-amber-500/25 border border-amber-300/40">
+                <AlertTriangle className="h-3 w-3 text-amber-200" />
+                <span className="text-[11px] font-semibold text-amber-100 uppercase tracking-wide">{stats.lowStock} items need restocking</span>
               </div>
-              {(stats?.lowStock || 0) > 0 && (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/30 border border-red-400/40">
-                  <AlertTriangle className="h-3 w-3 text-red-300" />
-                  <span className="text-[10px] font-black text-red-200 uppercase tracking-wide">{stats.lowStock} Low Stock</span>
-                </div>
-              )}
-            </div>
-            <h1 className="text-3xl font-black tracking-tight text-white" data-testid="text-page-title">Dealer Dashboard</h1>
-            <p className="text-purple-200 text-sm mt-1 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              MediVoice AI — MongoDB Atlas · OpenAI · Twilio
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <LiveRefreshIndicator interval={30} />
+            )}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Pharmacies" target={stats?.pharmacies} icon={Building2} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" href="/dealer/pharmacies" delay={0} subtitle="Partner pharmacies" glowClass="stat-card-purple" />
-        <StatCard title="Pending Orders" target={stats?.pendingOrders} icon={ClipboardList} gradient="bg-gradient-to-br from-orange-500 to-red-500" href="/dealer/orders" delay={80} subtitle="Awaiting processing" alert glowClass="stat-card-orange" />
-        <StatCard title="AI Calls" target={stats?.conversations} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" href="/dealer/conversations" delay={160} subtitle="Total recorded" glowClass="stat-card-blue" />
-        <StatCard title="Low Stock" target={stats?.lowStock} icon={AlertTriangle} gradient="bg-gradient-to-br from-amber-500 to-orange-500" href="/dealer/inventory" delay={240} subtitle="Needs restocking" alert glowClass="stat-card-amber" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard title="Pharmacies" target={stats?.pharmacies} icon={Building2} gradient="bg-gradient-to-br from-violet-500 to-purple-600" href="/dealer/pharmacies" delay={0} subtitle="Partner pharmacies" glowClass="stat-card-purple" />
+        <StatCard title="AI Calls" target={stats?.conversations} icon={MessageSquare} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" href="/dealer/conversations" delay={80} subtitle="Total recorded" glowClass="stat-card-blue" />
+        <StatCard title="Low Stock" target={stats?.lowStock} icon={AlertTriangle} gradient="bg-gradient-to-br from-amber-500 to-amber-600" href="/dealer/inventory" delay={160} subtitle="Needs restocking" alert glowClass="stat-card-amber" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -523,17 +507,11 @@ export default function DealerDashboard() {
             )}
           </div>
 
-          <div className="space-y-3">
-            <h2 className="font-bold text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-emerald-500" /> Live Activity
-            </h2>
-            <LiveActivityFeed />
-          </div>
         </div>
 
         <div className="space-y-4">
           <Card className="border-0 shadow-sm overflow-hidden animate-slide-right">
-            <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-4">
+            <div className="bg-gradient-to-br from-violet-600 to-purple-700 p-4">
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-white" />
                 <p className="text-sm font-black text-white">Quick Actions</p>
@@ -557,9 +535,6 @@ export default function DealerDashboard() {
               ))}
             </CardContent>
           </Card>
-
-          <OutboundFlow />
-          <SystemHealth stats={stats} />
         </div>
       </div>
     </div>

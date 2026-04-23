@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { LayoutDashboard, Building2, MessageSquare, Pill, ClipboardList, Phone, FileText, LogOut, Zap, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Building2, MessageSquare, Pill, ClipboardList, Phone, FileText, LogOut, Zap } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
@@ -19,7 +19,7 @@ function LiveBadge({ count, color = "bg-emerald-500" }: { count?: number; color?
 
 export function PharmacistSidebar() {
   const [location] = useLocation();
-  const { pharmacyName, pharmacyCode, clearPharmacy } = usePharmacyContext();
+  const { pharmacyName, pharmacyCode } = usePharmacyContext();
 
   const { data: orders = [] } = useQuery<any[]>({
     queryKey: ["/api/stock-requests", pharmacyCode],
@@ -72,15 +72,6 @@ export function PharmacistSidebar() {
             <p className="text-xs text-muted-foreground">MediVoice AI</p>
           </div>
         </div>
-        {pharmacyName && (
-          <button
-            onClick={clearPharmacy}
-            className="mt-2 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors px-1"
-            data-testid="button-switch-pharmacy"
-          >
-            <ChevronRight className="h-3 w-3" /> Switch pharmacy
-          </button>
-        )}
         {pendingOrders > 0 && (
           <Link href="/pharmacy/orders">
             <div className="mt-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors animate-fade-in-up">

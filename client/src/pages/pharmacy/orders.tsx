@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ClipboardList, User, Calendar, CreditCard, Package, TrendingUp,
-  Mic, ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, XCircle
+  Mic, ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, XCircle,
+  ExternalLink
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
@@ -105,18 +106,24 @@ function OrderCard({ order, index }: { order: any; index: number }) {
             </div>
             {expanded && (
               <div className="mt-2 space-y-1.5 animate-fade-in-up">
-                {order.items.map((item: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between text-xs bg-muted/60 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-1.5">
-                      <Package className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium">{item.medicine_name}</span>
+                {order.items.map((item: any, i: number) => {
+                  const qty = Number(item.quantity ?? item.order_quantity ?? 0) || 0;
+                  const unitPrice = Number(item.unit_price ?? 0) || 0;
+                  const lineTotal = unitPrice * qty;
+                  const name = item.medicine_name || item.medicine_id || "Item";
+                  return (
+                    <div key={i} className="flex items-center justify-between text-xs bg-muted/60 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <Package className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium">{name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span>×{qty}</span>
+                        {lineTotal > 0 && <span className="font-semibold text-foreground">${lineTotal.toFixed(2)}</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>×{item.quantity}</span>
-                      {item.unit_price && <span className="font-semibold text-foreground">${(item.unit_price * item.quantity).toFixed(2)}</span>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -124,8 +131,8 @@ function OrderCard({ order, index }: { order: any; index: number }) {
 
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div>
-            {order.total_amount !== undefined && (
-              <p className="font-bold text-base">${order.total_amount.toFixed(2)}</p>
+            {Number.isFinite(Number(order.total_amount)) && (
+              <p className="font-bold text-base">${Number(order.total_amount).toFixed(2)}</p>
             )}
             {order.payment_status && (
               <div className="flex items-center gap-1 text-xs">
@@ -143,6 +150,32 @@ function OrderCard({ order, index }: { order: any; index: number }) {
             </p>
           )}
         </div>
+
+        {order.payment_link && order.payment_status !== "Paid" && order.status !== "Cancelled" && (
+          <a
+            href={order.payment_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 w-full text-xs font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white transition-all duration-200 shadow-sm hover:shadow-md"
+            data-testid={`link-pay-${order._id}`}
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            Pay with Stripe
+            <ExternalLink className="h-3 w-3 opacity-80" />
+          </a>
+        )}
+        {order.payment_link && order.payment_status === "Paid" && (
+          <a
+            href={order.payment_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 w-full text-xs font-medium px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+            data-testid={`link-pay-${order._id}`}
+          >
+            <ExternalLink className="h-3 w-3" />
+            View payment link
+          </a>
+        )}
       </CardContent>
     </Card>
   );

@@ -77,33 +77,44 @@ export default function PharmacyConversations() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {conversations.map((c: any, i: number) => (
-            <Link key={c._id} href={`/pharmacy/conversations/${c._id}`}>
-              <Card
-                className="hover-elevate hover-shine cursor-pointer border-0 shadow-sm hover:shadow-lg transition-all duration-300 animate-fade-in-up group stat-card-purple"
-                style={{ animationDelay: `${i * 40}ms` }}
-                data-testid={`card-conversation-${c._id}`}
-              >
-                <CardContent className="flex items-center gap-4 py-4 px-4">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm">
-                    <Bot className="h-5 w-5 text-white icon-bounce" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate" data-testid={`text-convo-pharmacy-${c._id}`}>
-                      {c.pharmacy_name || "MediVoice AI Call"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {c.ai_response?.slice(0, 75) || c.pharmacist_text?.slice(0, 75) || "No content"}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {c.timestamp ? new Date(c.timestamp).toLocaleString() : "—"}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          {conversations.map((c: any, i: number) => {
+            const transcript = c.transcript || c.transcript_text || "";
+            const transcriptStr = Array.isArray(transcript) ? transcript.join("") : String(transcript);
+            const firstLine = transcriptStr.split("\n").find((l: string) => l.trim()) || "";
+            const preview =
+              c.ai_response ||
+              c.pharmacist_text ||
+              c.summary ||
+              firstLine ||
+              "No content";
+            return (
+              <Link key={c._id} href={`/pharmacy/conversations/${c._id}`}>
+                <Card
+                  className="hover-elevate hover-shine cursor-pointer border-0 shadow-sm hover:shadow-lg transition-all duration-300 animate-fade-in-up group stat-card-purple"
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  data-testid={`card-conversation-${c._id}`}
+                >
+                  <CardContent className="flex items-center gap-4 py-4 px-4">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300 shadow-sm">
+                      <Bot className="h-5 w-5 text-white icon-bounce" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate" data-testid={`text-convo-pharmacy-${c._id}`}>
+                        {c.pharmacy_name || "MediVoice AI Call"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {preview.slice(0, 75)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {c.timestamp ? new Date(c.timestamp).toLocaleString() : "—"}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
 

@@ -23,6 +23,7 @@ import StockRequests from "@/pages/stock-requests";
 import Offers from "@/pages/offers";
 import Conversations from "@/pages/conversations";
 import ConversationDetail from "@/pages/conversation-detail";
+import TriggerWords from "@/pages/dealer/trigger-words";
 
 import PharmacyDashboard from "@/pages/pharmacy/dashboard";
 import PharmacyProfile from "@/pages/pharmacy/profile";
@@ -45,6 +46,7 @@ function DealerRouter() {
       <Route path="/dealer/offers" component={Offers} />
       <Route path="/dealer/conversations" component={Conversations} />
       <Route path="/dealer/conversations/:id" component={ConversationDetail} />
+      <Route path="/dealer/trigger-words" component={TriggerWords} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -83,7 +85,7 @@ function DealerLayout() {
   );
 }
 
-function PharmacyLayoutInner() {
+function PharmacyLayout() {
   const { pharmacyId } = usePharmacyContext();
 
   if (!pharmacyId) {
@@ -105,14 +107,6 @@ function PharmacyLayoutInner() {
   );
 }
 
-function PharmacyLayout() {
-  return (
-    <PharmacyProvider>
-      <PharmacyLayoutInner />
-    </PharmacyProvider>
-  );
-}
-
 function AppRouter() {
   const [location] = useLocation();
   if (location === "/") return <Landing />;
@@ -126,8 +120,10 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
-          <AppRouter />
-          <Toaster />
+          <PharmacyProvider>
+            <AppRouter />
+            <Toaster />
+          </PharmacyProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

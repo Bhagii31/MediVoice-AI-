@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { connectMongoDB, isMongoConnected } from "./db/mongoose";
+import { connectMongoDB, isMongoConnected, mongoose } from "./db/mongoose";
 import { Pharmacy } from "./models/Pharmacy";
 import { Dealer } from "./models/Dealer";
 import { Medicine } from "./models/Medicine";
@@ -10,9 +10,16 @@ import { StockRequest } from "./models/StockRequest";
 import { Offer } from "./models/Offer";
 import { Personalization } from "./models/Personalization";
 import { Schedule } from "./models/Schedule";
-
+import { TriggerWord } from "./models/TriggerWord";
+import twilio from "twilio";
 import OpenAI from "openai";
+import dotenv from "dotenv";
+dotenv.config();
 
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID || "",
+  process.env.TWILIO_AUTH_TOKEN || ""
+);
 function getOpenAI(): OpenAI {
   const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OpenAI API key not configured. Set OPENAI_API_KEY in your .env file.");
@@ -20,6 +27,92 @@ function getOpenAI(): OpenAI {
     apiKey,
     baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
   });
+}
+
+function normalizePhoneNumber(value: unknown): string {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+")) return cleaned;
+  if (cleaned.length === 10) return `+1${cleaned}`;
+  return cleaned;
+}
+
+function buildKeywordCallReason(payload: {
+  medicine?: string;
+  intent?: string;
+  summary?: string;
+  transcript?: string;
+}) {
+  const medicine = String(payload.medicine || "").trim();
+  const intent = String(payload.intent || "").trim().replace(/_/g, " ");
+  const summary = String(payload.summary || "").trim();
+  const transcript = String(payload.transcript || "").trim();
+
+  const parts = [
+    medicine ? `medicine mention: ${medicine}` : "",
+    intent ? `intent: ${intent}` : "",
+    summary || transcript ? `store conversation follow-up needed` : "",
+  ].filter(Boolean);
+
+  return parts.join(", ") || "store conversation follow-up";
+}
+
+async function findPharmacyRecord(payload: {
+  pharmacyId?: string;
+  pharmacyName?: string;
+}) {
+  const pharmacyId = String(payload.pharmacyId || "").trim();
+  const pharmacyName = String(payload.pharmacyName || "").trim();
+
+  console.log("[auto-call] pharmacy lookup start", {
+    pharmacyId,
+    pharmacyName,
+  });
+
+  if (pharmacyId) {
+    if (mongoose.isValidObjectId(pharmacyId)) {
+      const byObjectId = await Pharmacy.findById(pharmacyId).lean();
+      if (byObjectId) {
+        console.log("[auto-call] pharmacy found by _id", {
+          pharmacyId,
+          name: (byObjectId as any)?.name,
+          contact: (byObjectId as any)?.contact,
+        });
+        return byObjectId;
+      }
+    }
+
+    const byBusinessId = await Pharmacy.findOne({ pharmacy_id: pharmacyId }).lean();
+    if (byBusinessId) {
+      console.log("[auto-call] pharmacy found by pharmacy_id", {
+        pharmacyId,
+        name: (byBusinessId as any)?.name,
+        contact: (byBusinessId as any)?.contact,
+      });
+      return byBusinessId;
+    }
+  }
+
+  if (pharmacyName) {
+    const escaped = pharmacyName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const byName = await Pharmacy.findOne({
+      name: { $regex: `^${escaped}$`, $options: "i" },
+    }).lean();
+    if (byName) {
+      console.log("[auto-call] pharmacy found by name", {
+        pharmacyName,
+        contact: (byName as any)?.contact,
+      });
+      return byName;
+    }
+  }
+
+  console.log("[auto-call] pharmacy lookup failed", {
+    pharmacyId,
+    pharmacyName,
+  });
+  return null;
 }
 
 export async function registerRoutes(
@@ -34,6 +127,116 @@ export async function registerRoutes(
       return false;
     }
     return true;
+  }
+
+  async function placeKeywordFollowUpCall(payload: {
+    pharmacyId?: string;
+    pharmacyName?: string;
+    medicine?: string;
+    intent?: string;
+    summary?: string;
+    transcript?: string;
+  }) {
+    const twilio_sid = process.env.TWILIO_ACCOUNT_SID;
+    const twilio_token = process.env.TWILIO_AUTH_TOKEN;
+    const twilio_number = process.env.TWILIO_PHONE_NUMBER;
+
+    console.log("[auto-call] placeKeywordFollowUpCall start", {
+      pharmacyId: payload.pharmacyId,
+      pharmacyName: payload.pharmacyName,
+      medicine: payload.medicine,
+      intent: payload.intent,
+      hasSummary: !!payload.summary,
+      hasTranscript: !!payload.transcript,
+      hasTwilioSid: !!twilio_sid,
+      hasTwilioToken: !!twilio_token,
+      twilioNumber: twilio_number || "",
+      baseUrl: process.env.BASE_URL || "",
+    });
+
+    if (!twilio_sid || !twilio_token || !twilio_number) {
+      console.log("[auto-call] twilio config missing");
+      return { ok: false, error: "Twilio not configured." };
+    }
+
+    const pharmacy: any = await findPharmacyRecord(payload);
+
+    if (!pharmacy) {
+      console.log("[auto-call] aborting because pharmacy was not found");
+      return { ok: false, error: "Pharmacy not found for auto-call." };
+    }
+
+    const toNumber = normalizePhoneNumber((pharmacy as any).contact);
+    if (!toNumber) {
+      console.log("[auto-call] aborting because pharmacy contact is missing", {
+        pharmacyName: (pharmacy as any)?.name,
+        rawContact: (pharmacy as any)?.contact,
+      });
+      return { ok: false, error: "Pharmacy contact number is missing." };
+    }
+
+    const { default: twilioLib } = await import("twilio");
+    const twilioClient = twilioLib(twilio_sid, twilio_token);
+    const reason = buildKeywordCallReason(payload);
+    const baseUrl = process.env.BASE_URL;
+    if (!baseUrl) {
+      console.log("[auto-call] aborting because BASE_URL is missing");
+      return { ok: false, error: "BASE_URL is required for outbound call webhooks." };
+    }
+
+    const outboundUrl = `${baseUrl}/api/twilio/outbound-script?reason=${encodeURIComponent(reason)}&pharmacyName=${encodeURIComponent((pharmacy as any).name || payload.pharmacyName || "Pharmacy")}&medicine=${encodeURIComponent(String(payload.medicine || ""))}&intent=${encodeURIComponent(String(payload.intent || ""))}&summary=${encodeURIComponent(String(payload.summary || ""))}`;
+
+    console.log("[auto-call] creating twilio call", {
+      to: toNumber,
+      from: twilio_number,
+      pharmacyName: (pharmacy as any).name || payload.pharmacyName || "Pharmacy",
+      outboundUrl,
+    });
+
+    let call;
+    try {
+      call = await twilioClient.calls.create({
+        to: toNumber,
+        from: twilio_number,
+        url: outboundUrl,
+      });
+    } catch (error: any) {
+      console.error("[auto-call] twilio call create failed", {
+        message: error?.message || "Unknown error",
+        code: error?.code,
+        status: error?.status,
+        moreInfo: error?.moreInfo,
+      });
+      return {
+        ok: false,
+        error: error?.message || "Twilio failed to create outbound call.",
+      };
+    }
+
+    console.log("[auto-call] twilio call created", {
+      callSid: call.sid,
+      to: toNumber,
+    });
+
+    const conversation = new Conversation({
+      pharmacy_name: (pharmacy as any).name || payload.pharmacyName || "Pharmacy",
+      timestamp: new Date(),
+      type: "outbound",
+      status: "initiated",
+      call_sid: call.sid,
+      pharmacist_text: payload.transcript || "",
+      ai_response: payload.summary || `Outbound call started for ${reason}.`,
+    });
+    await conversation.save();
+
+    return {
+      ok: true,
+      callSid: call.sid,
+      pharmacyName: (pharmacy as any).name || payload.pharmacyName || "Pharmacy",
+      to: toNumber,
+      conversationId: conversation._id,
+      pharmacyId: String((pharmacy as any)._id || ""),
+    };
   }
 
   // ─── HEALTH CHECK ──────────────────────────────────────────────────
@@ -469,6 +672,260 @@ export async function registerRoutes(
     }
   });
 
+  // ─── TRIGGER WORDS ────────────────────────────────────────────────────
+app.get("/api/trigger-words", async (req, res) => {
+  if (!requireMongo(res)) return;
+  try {
+    const page   = parseInt(req.query.page as string)  || 1;
+    const limit  = parseInt(req.query.limit as string) || 50;
+    const intent = req.query.intent as string;
+    const search = req.query.search as string;
+
+    const filter: any = {};
+    if (intent) filter.intent = intent;
+    if (search) {
+      filter.$or = [
+        { medicine:      { $regex: search, $options: "i" } },
+        { summary:       { $regex: search, $options: "i" } },
+        { transcript:    { $regex: search, $options: "i" } },
+        { pharmacy_name: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const total = await TriggerWord.countDocuments(filter);
+    const items = await TriggerWord.find(filter)
+      .sort({ created_at: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    res.json({ items, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+  app.post("/api/trigger-words", async (req, res) => {
+    if (!requireMongo(res)) return;
+    try {
+      const {
+        pharmacyId,
+        pharmacy_id,
+        pharmacyName,
+        pharmacy_name,
+        medicine,
+        intent,
+        summary,
+        transcript,
+        language,
+        source,
+        autoCall = true,
+      } = req.body || {};
+
+      console.log("[trigger-words] incoming payload", {
+        pharmacyId,
+        pharmacy_id,
+        pharmacyName,
+        pharmacy_name,
+        medicine,
+        intent,
+        source,
+        language,
+        autoCall,
+      });
+
+      const resolvedPharmacyId = String(pharmacyId || pharmacy_id || "").trim();
+      const resolvedPharmacyName = String(pharmacyName || pharmacy_name || "").trim();
+
+      if (!resolvedPharmacyId && !resolvedPharmacyName) {
+        return res.status(400).json({ error: "pharmacyId or pharmacyName is required." });
+      }
+
+      const pharmacy: any = await findPharmacyRecord({
+        pharmacyId: resolvedPharmacyId,
+        pharmacyName: resolvedPharmacyName,
+      });
+
+      const triggerWord = await new TriggerWord({
+        pharmacy_id: String((pharmacy as any)?.pharmacy_id || (pharmacy as any)?._id || resolvedPharmacyId || "").trim() || undefined,
+        pharmacy_name: String((pharmacy as any)?.name || resolvedPharmacyName || "").trim() || undefined,
+        medicine: String(medicine || "").trim() || undefined,
+        intent: String(intent || "").trim() || undefined,
+        summary: String(summary || "").trim() || undefined,
+        transcript: String(transcript || "").trim() || undefined,
+        language: String(language || "").trim() || "en",
+        source: String(source || "").trim() || "raspberry_pi",
+        created_at: new Date(),
+      }).save();
+
+      let autoCallResult: any = {
+        ok: false,
+        skipped: true,
+        error: "Auto-call disabled.",
+      };
+
+      if (autoCall !== false) {
+        try {
+          autoCallResult = await placeKeywordFollowUpCall({
+            pharmacyId: String((pharmacy as any)?._id || resolvedPharmacyId || ""),
+            pharmacyName: String((pharmacy as any)?.name || resolvedPharmacyName || ""),
+            medicine,
+            intent,
+            summary,
+            transcript,
+          });
+        } catch (err: any) {
+          autoCallResult = {
+            ok: false,
+            error: err.message || "Failed to start owner follow-up call.",
+          };
+        }
+      }
+
+      if (autoCallResult.ok) {
+        await TriggerWord.findByIdAndUpdate(triggerWord._id, {
+          auto_call_status: "initiated",
+          auto_call_sid: autoCallResult.callSid,
+          auto_call_to: autoCallResult.to,
+          auto_call_conversation_id: autoCallResult.conversationId,
+          call_triggered_at: new Date(),
+        });
+      } else {
+        await TriggerWord.findByIdAndUpdate(triggerWord._id, {
+          auto_call_status: autoCallResult.skipped ? "skipped" : "failed",
+          auto_call_error: autoCallResult.error || "",
+        });
+      }
+
+      const saved = await TriggerWord.findById(triggerWord._id).lean();
+      console.log("[trigger-words] stored trigger word result", {
+        id: String(triggerWord._id),
+        autoCallResult,
+      });
+      res.status(201).json({
+        success: true,
+        item: saved,
+        autoCall: autoCallResult,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to store trigger word." });
+    }
+  });
+
+  app.post("/api/store-trigger", async (req, res) => {
+    if (!requireMongo(res)) return;
+    try {
+      const {
+        pharmacyId,
+        pharmacy_id,
+        pharmacyName,
+        pharmacy_name,
+        keyword,
+        medicine,
+        intent,
+        summary,
+        transcript,
+        text,
+        source,
+        language,
+        autoCall = true,
+      } = req.body || {};
+
+      console.log("[store-trigger] incoming payload", {
+        pharmacyId,
+        pharmacy_id,
+        pharmacyName,
+        pharmacy_name,
+        keyword,
+        medicine,
+        intent,
+        source,
+        language,
+        autoCall,
+      });
+
+      const resolvedMedicine = String(medicine || keyword || "").trim();
+      const resolvedTranscript = String(transcript || text || "").trim();
+      const resolvedPharmacyId = String(pharmacyId || pharmacy_id || "").trim();
+      const resolvedPharmacyName = String(pharmacyName || pharmacy_name || "").trim();
+
+      if (!resolvedPharmacyId && !resolvedPharmacyName) {
+        return res.status(400).json({ error: "pharmacyId or pharmacyName is required." });
+      }
+
+      const pharmacy: any = await findPharmacyRecord({
+        pharmacyId: resolvedPharmacyId,
+        pharmacyName: resolvedPharmacyName,
+      });
+
+      const triggerWord = await new TriggerWord({
+        pharmacy_id: String((pharmacy as any)?.pharmacy_id || (pharmacy as any)?._id || resolvedPharmacyId || "").trim() || undefined,
+        pharmacy_name: String((pharmacy as any)?.name || resolvedPharmacyName || "").trim() || undefined,
+        medicine: resolvedMedicine || undefined,
+        intent: String(intent || "customer_request").trim(),
+        summary: String(summary || "").trim() || undefined,
+        transcript: resolvedTranscript || undefined,
+        language: String(language || "en").trim(),
+        source: String(source || "raspberry_pi").trim(),
+        created_at: new Date(),
+      }).save();
+
+      let autoCallResult: any = {
+        ok: false,
+        skipped: true,
+        error: "Auto-call disabled.",
+      };
+
+      if (autoCall !== false) {
+        try {
+          autoCallResult = await placeKeywordFollowUpCall({
+            pharmacyId: resolvedPharmacyId,
+            pharmacyName: String((pharmacy as any)?.name || resolvedPharmacyName || ""),
+            medicine: resolvedMedicine,
+            intent: String(intent || "customer_request").trim(),
+            summary: String(summary || "").trim(),
+            transcript: resolvedTranscript,
+          });
+        } catch (err: any) {
+          autoCallResult = {
+            ok: false,
+            error: err.message || "Failed to start owner follow-up call.",
+          };
+        }
+      }
+
+      if (autoCallResult.ok) {
+        await TriggerWord.findByIdAndUpdate(triggerWord._id, {
+          pharmacy_id: String((pharmacy as any)?.pharmacy_id || autoCallResult.pharmacyId || resolvedPharmacyId || "").trim() || undefined,
+          pharmacy_name: autoCallResult.pharmacyName || (pharmacy as any)?.name || resolvedPharmacyName || undefined,
+          auto_call_status: "initiated",
+          auto_call_sid: autoCallResult.callSid,
+          auto_call_to: autoCallResult.to,
+          auto_call_conversation_id: autoCallResult.conversationId,
+          call_triggered_at: new Date(),
+        });
+      } else {
+        await TriggerWord.findByIdAndUpdate(triggerWord._id, {
+          auto_call_status: autoCallResult.skipped ? "skipped" : "failed",
+          auto_call_error: autoCallResult.error || "",
+        });
+      }
+
+      const saved = await TriggerWord.findById(triggerWord._id).lean();
+      console.log("[store-trigger] stored trigger result", {
+        id: String(triggerWord._id),
+        autoCallResult,
+      });
+      res.status(201).json({
+        success: true,
+        item: saved,
+        autoCall: autoCallResult,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to store trigger event." });
+    }
+  });
+
   // ─── TWILIO STATUS ────────────────────────────────────────────────────
   app.get("/api/twilio/status", (_req, res) => {
     const configured = !!(
@@ -528,10 +985,11 @@ export async function registerRoutes(
       if (pharmacy) pharmacyName = pharmacy.name;
     } catch {}
 
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice">Welcome to MediVoice AI. Hello ${pharmacyName}! I can help you with stock availability, medicine pricing, and active promotional offers. Please describe your requirements after the beep.</Say>
-  <Record maxLength="45" action="/api/twilio/process-recording" transcribe="true" transcribeCallback="/api/twilio/transcription" playBeep="true" />
+  <Record maxLength="45" action="${baseUrl}/api/twilio/process-recording" transcribe="true" transcribeCallback="${baseUrl}/api/twilio/transcription" playBeep="true" />
 </Response>`;
     res.type("text/xml").send(twiml);
   });
@@ -654,15 +1112,59 @@ export async function registerRoutes(
   });
 
   app.get("/api/twilio/outbound-script", async (req, res) => {
-    const { pharmacyName, reason } = req.query as Record<string, string>;
+    const { pharmacyName, reason, medicine, intent, summary } = req.query as Record<string, string>;
     const name = pharmacyName || "valued pharmacy";
+    const followUpDetails = [
+      medicine ? `The medicine mentioned was ${medicine}.` : "",
+      intent ? `The detected store intent was ${intent.replace(/_/g, " ")}.` : "",
+      summary ? `Store summary: ${summary}.` : "",
+    ].filter(Boolean).join(" ");
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="alice">Hello! This is MediVoice AI, your automated pharmacy assistant. I am calling ${name} regarding a ${reason || "stock check and medicine enquiry"}. Please speak your questions about stock availability, pricing, or current offers after the beep, and I will assist you right away.</Say>
+  <Say voice="alice">Hello! This is MediVoice AI, your automated pharmacy assistant. I am calling ${name} regarding a ${reason || "stock check and medicine enquiry"}. ${followUpDetails} Please tell me what order, stock check, or follow-up action you would like to place after the beep, and I will assist you right away.</Say>
   <Record maxLength="60" action="/api/twilio/process-recording" transcribe="true" transcribeCallback="/api/twilio/transcription" playBeep="true" />
 </Response>`;
     res.type("text/xml").send(twiml);
   });
 
+  // ─── SCHEDULE CALL ────────────────────────────────────────────
+  app.post("/api/schedule-call", async (req, res) => {
+    try {
+      const { date, time, note, pharmacyName } = req.body;
+      if (!date || !time) return res.status(400).json({ error: "date and time are required" });
+      if (isMongoConnected()) {
+        await new Conversation({
+          pharmacy_name: pharmacyName || "Unknown",
+          pharmacist_text: note || "Scheduled callback",
+          ai_response: `Call scheduled for ${date} at ${time}.`,
+          timestamp: new Date(),
+          type: "scheduled",
+          status: "scheduled",
+        }).save();
+      }
+      res.json({ success: true, date, time });
+    } catch (err) {
+      console.error("Schedule call error:", err);
+      res.status(500).json({ error: "Failed to schedule call" });
+    }
+  });
+
+  // ─── SIMPLE TEST CALL ROUTE (ADDED) ───────────────────────────
+app.post("/api/call", async (req, res) => {
+  console.log("CALL API HIT");
+
+  try {
+    const call = await client.calls.create({
+      to: "+12014928255", // your phone
+      from: "+12015846019", // Twilio number
+      url: "https://berta-triste-cason.ngrok-free.dev/twilio/incoming"
+    });
+
+    res.json({ success: true, sid: call.sid });
+  } catch (error) {
+    console.error("CALL ERROR:", error);
+    res.status(500).json({ error: "Failed" });
+  }
+});
   return httpServer;
 }

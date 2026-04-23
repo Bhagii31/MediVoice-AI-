@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { LogOut, ArrowLeftRight } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/theme-provider";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -19,7 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function PharmacyTopbar() {
   const [location] = useLocation();
-  const { pharmacyName, pharmacyCode, clearPharmacy } = usePharmacyContext();
+  const { pharmacyName, pharmacyCode } = usePharmacyContext();
 
   const { data: orders = [] } = useQuery<any[]>({
     queryKey: ["/api/stock-requests", pharmacyCode],
@@ -77,16 +77,6 @@ export function PharmacyTopbar() {
 
       {/* Right controls */}
       <div className="flex items-center gap-0.5">
-        {pharmacyName && (
-          <button
-            onClick={clearPharmacy}
-            className="hidden sm:flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            data-testid="button-switch-pharmacy"
-            title="Switch pharmacy"
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-          </button>
-        )}
         <div className="[&_button]:text-muted-foreground [&_button:hover]:text-foreground [&_button:hover]:bg-accent [&_button]:rounded-lg">
           <ThemeToggle />
         </div>

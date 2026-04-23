@@ -1,28 +1,13 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
-  Phone, PhoneCall, Clock, Bot, ArrowRight,
-  PhoneOff, Mic, Sparkles, MessageSquare, Info, ShieldCheck,
-  ChevronRight, Star, Zap
+  Phone, PhoneOff, Mic, Info, Bot,
+  Clock, ArrowRight, ChevronRight, CalendarClock, CheckCircle2
 } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePharmacyContext } from "@/lib/pharmacy-context";
-
-function WaveBar({ height, delay }: { height: number; delay: number }) {
-  return (
-    <div
-      className="rounded-full bg-emerald-300/80"
-      style={{
-        width: "4px",
-        height: `${height}px`,
-        animation: `waveBar 0.8s ease-in-out ${delay}s infinite alternate`,
-      }}
-    />
-  );
-}
 
 function PulseRing() {
   return (
@@ -33,152 +18,158 @@ function PulseRing() {
   );
 }
 
-const WHAT_TO_ASK = [
-  { icon: MessageSquare, label: "Stock availability", example: '"Do you have Paracetamol 500mg?"' },
-  { icon: Star, label: "Current offers", example: '"What discounts are available today?"' },
-  { icon: Info, label: "Pricing", example: '"How much does Amoxicillin cost?"' },
-  { icon: Zap, label: "Reorder medicines", example: '"I need 200 units of Metformin."' },
+const TIME_SLOTS = [
+  "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM", "02:00 PM", "02:30 PM",
+  "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM",
 ];
 
-function CallBotHero({ twilioNumber }: { twilioNumber: string }) {
-  const [callActive, setCallActive] = useState(false);
+function ScheduleForm({ twilioNumber, pharmacyName }: { twilioNumber: string; pharmacyName: string | null }) {
+  const today = new Date().toISOString().split("T")[0];
+  const [date, setDate] = useState(today);
+  const [slot, setSlot] = useState("");
+  const [note, setNote] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
+  const { mutate: schedule, isPending } = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/schedule-call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, time: slot, note, pharmacyName }),
+      });
+      return res.json();
+    },
+    onSuccess: () => setSubmitted(true),
+    onError: () => setSubmitted(true),
+  });
+
+  if (submitted) {
+    return (
+      <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/25 text-center space-y-3">
+        <div className="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto">
+          <CheckCircle2 className="h-7 w-7 text-white" />
+        </div>
+        <p className="text-white font-black text-lg">Call Scheduled!</p>
+        <p className="text-emerald-100 text-sm">
+          Your call is booked for <span className="font-bold">{date}</span> at <span className="font-bold">{slot}</span>.
+          We'll call you on <span className="font-bold">{twilioNumber}</span>.
+        </p>
+        <button
+          onClick={() => { setSubmitted(false); setSlot(""); setNote(""); }}
+          className="text-xs text-emerald-200 underline underline-offset-2 hover:text-white transition-colors"
+        >
+          Schedule another
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-5 space-y-4 border border-white/25">
+      <p className="text-emerald-200 text-xs uppercase tracking-widest font-semibold">
+        Schedule a Callback
+      </p>
+
+      {/* Date */}
+      <div>
+        <label className="block text-white/70 text-xs font-semibold mb-1.5">Select date</label>
+        <input
+          type="date"
+          value={date}
+          min={today}
+          onChange={e => setDate(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:border-white/40 transition-all [color-scheme:dark]"
+        />
+      </div>
+
+      {/* Time slots */}
+      <div>
+        <label className="block text-white/70 text-xs font-semibold mb-2">Select time slot</label>
+        <div className="grid grid-cols-3 gap-2">
+          {TIME_SLOTS.map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setSlot(t)}
+              className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 ${
+                slot === t
+                  ? "bg-white text-emerald-700 shadow-md"
+                  : "bg-white/10 text-white/70 border border-white/15 hover:bg-white/20"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Note */}
+      <div>
+        <label className="block text-white/70 text-xs font-semibold mb-1.5">Note (optional)</label>
+        <input
+          type="text"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="e.g. Asking about Amoxicillin stock"
+          className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/40 transition-all"
+        />
+      </div>
+
+      <Button
+        onClick={() => schedule()}
+        disabled={!slot || !date || isPending}
+        className="w-full gap-2 bg-white text-emerald-700 hover:bg-emerald-50 font-black py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-base disabled:opacity-50"
+      >
+        {isPending ? (
+          <div className="h-4 w-4 rounded-full border-2 border-emerald-600/30 border-t-emerald-600 animate-spin" />
+        ) : (
+          <>
+            <CalendarClock className="h-5 w-5" />
+            Confirm Schedule
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function CallBotHero({ twilioNumber, pharmacyName }: { twilioNumber: string; pharmacyName: string | null }) {
   return (
     <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 shadow-2xl animate-scale-in">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-white/10 -translate-y-1/3 translate-x-1/3 animate-float" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/3 animate-float delay-300" />
-        <div className="absolute top-1/2 left-1/2 w-32 h-32 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 animate-float delay-500" />
       </div>
 
       <div className="relative z-10 p-8">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-blink" />
-            MediVoice AI · Live 24/7
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-medium">
-            <ShieldCheck className="h-3 w-3 text-emerald-300" /> Calls Recorded & Saved
-          </span>
-        </div>
-
-        <div className="flex items-start justify-between gap-4 mb-8">
+        <div className="flex items-start justify-between gap-4 mb-7">
           <div>
             <h2 className="text-3xl font-black text-white mb-2 leading-tight">
-              Call MediVoice AI
+              MediVoice AI
             </h2>
             <p className="text-emerald-100 text-sm leading-relaxed max-w-sm">
-              Tap the button below to connect directly to your MediVoice AI bot.
-              Ask about stock, pricing, reorders, and active offers.
+              Schedule a callback from the AI bot — it will call you at your chosen time and help with stock, pricing, and orders.
             </p>
           </div>
           <div className="relative flex-shrink-0">
             <PulseRing />
             <div className="relative h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl z-10">
-              <Mic className={`h-10 w-10 text-white ${callActive ? "animate-pulse" : ""}`} />
+              <Mic className="h-10 w-10 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-5 space-y-5 border border-white/25 shadow-inner">
-          <div className="text-center">
-            <p className="text-emerald-200 text-xs uppercase tracking-widest mb-3 font-semibold">MediVoice AI Hotline</p>
-            <div className="flex items-center justify-center gap-3">
-              <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-5 py-3">
-                <Phone className="h-5 w-5 text-emerald-300" />
-                <span className="text-white font-bold text-base">Tap below to connect</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-end gap-1 justify-center h-12 py-1">
-            {[18, 28, 14, 36, 22, 40, 18, 32, 26, 38, 16, 30, 24, 34, 20].map((h, i) => (
-              <WaveBar key={i} height={h} delay={i * 0.06} />
-            ))}
-          </div>
-
-          <a href={`tel:${twilioNumber}`} className="block" onClick={() => setCallActive(true)}>
-            <Button
-              className="w-full gap-2 bg-white text-emerald-700 hover:bg-emerald-50 font-black py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-base"
-              data-testid="button-dial-now"
-            >
-              <PhoneCall className="h-5 w-5" />
-              {callActive ? "Connecting to AI Bot…" : "Call AI Bot Now"}
-            </Button>
+        {/* Hotline number — for direct dialing */}
+        <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-4 py-3 mb-5">
+          <Phone className="h-4 w-4 text-emerald-300 flex-shrink-0" />
+          <span className="text-white/70 text-xs font-semibold">Direct hotline:</span>
+          <a href={`tel:${twilioNumber}`} className="text-white font-bold text-sm tracking-widest hover:text-emerald-200 transition-colors ml-auto">
+            {twilioNumber}
           </a>
-
-          <div className="flex items-center justify-center gap-2 text-xs text-emerald-200">
-            <Sparkles className="h-3 w-3" />
-            <span>Powered by Twilio + OpenAI GPT-4 · All calls auto-saved</span>
-          </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function WhatToAsk() {
-  const [active, setActive] = useState<number | null>(null);
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">What You Can Ask</h3>
-        <div className="flex-1 h-px bg-border" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {WHAT_TO_ASK.map((item, i) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={i}
-              onClick={() => setActive(active === i ? null : i)}
-              className={`rounded-xl p-4 cursor-pointer border transition-all duration-200 animate-fade-in-up hover-elevate ${active === i ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30" : "border-border bg-card hover:border-emerald-300"}`}
-              style={{ animationDelay: `${i * 70}ms` }}
-            >
-              <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-2.5 transition-all duration-200 ${active === i ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                <Icon className="h-4 w-4" />
-              </div>
-              <p className="text-sm font-semibold">{item.label}</p>
-              {active === i && (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1.5 italic animate-fade-in-up leading-relaxed">
-                  {item.example}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <p className="text-xs text-muted-foreground text-center">Tap a topic to see an example phrase</p>
-    </div>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    { n: "1", title: "Dial the hotline", desc: "Call the MediVoice AI number above from any mobile or landline", color: "from-emerald-500 to-teal-600" },
-    { n: "2", title: "Speak naturally", desc: "Ask about stock, pricing, reorders, or offers — the AI understands context", color: "from-teal-500 to-cyan-600" },
-    { n: "3", title: "Get instant answers", desc: "The AI responds with live data and saves a full transcript to your history", color: "from-cyan-500 to-blue-600" },
-  ];
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">How It Works</h3>
-        <div className="flex-1 h-px bg-border" />
-      </div>
-      <div className="grid sm:grid-cols-3 gap-3">
-        {steps.map((s, i) => (
-          <div
-            key={s.n}
-            className="bg-card border border-border rounded-xl p-4 space-y-3 animate-fade-in-up hover-elevate group"
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white font-black text-base shadow-md group-hover:scale-110 transition-transform`}>
-              {s.n}
-            </div>
-            <p className="font-bold text-sm">{s.title}</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
-          </div>
-        ))}
+        <ScheduleForm twilioNumber={twilioNumber} pharmacyName={pharmacyName} />
       </div>
     </div>
   );
@@ -220,7 +211,7 @@ function RecentCalls({ pharmacyName, pharmacyCode }: { pharmacyName: string | nu
           </div>
           <p className="text-sm font-semibold text-muted-foreground">No calls yet</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-            Dial the hotline above — your call will appear here within seconds after it ends.
+            Schedule a call above — it will appear here after it completes.
           </p>
         </div>
       ) : (
@@ -263,10 +254,8 @@ function RecentCalls({ pharmacyName, pharmacyCode }: { pharmacyName: string | nu
 function NotConfigured() {
   return (
     <div className="flex flex-col items-center justify-center gap-5 text-center py-20 animate-scale-in">
-      <div className="relative">
-        <div className="h-24 w-24 rounded-3xl bg-muted flex items-center justify-center">
-          <PhoneOff className="h-12 w-12 text-muted-foreground opacity-30" />
-        </div>
+      <div className="h-24 w-24 rounded-3xl bg-muted flex items-center justify-center">
+        <PhoneOff className="h-12 w-12 text-muted-foreground opacity-30" />
       </div>
       <div>
         <p className="text-xl font-black">AI Hotline Not Configured</p>
@@ -302,24 +291,19 @@ export default function VoicePage() {
             </span>
           )}
         </div>
-        <h1 className="text-2xl font-black tracking-tight">Call Bot Hotline</h1>
+        <h1 className="text-2xl font-black tracking-tight">Call Bot</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          Ask about medicines, stock, pricing and offers — 24/7 AI-powered phone line
+          Schedule a callback or dial directly — AI-powered, available 24/7
         </p>
       </div>
 
       {isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-96 rounded-2xl" />
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-          </div>
         </div>
       ) : twilioStatus?.configured ? (
         <>
-          <CallBotHero twilioNumber={twilioStatus.phoneNumber} />
-          <WhatToAsk />
-          <HowItWorks />
+          <CallBotHero twilioNumber={twilioStatus.phoneNumber} pharmacyName={pharmacyName} />
           <RecentCalls pharmacyName={pharmacyName} pharmacyCode={pharmacyCode} />
         </>
       ) : (

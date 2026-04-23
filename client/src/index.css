@@ -139,6 +139,15 @@
 }
 
 /* ─── KEYFRAME ANIMATIONS ────────────────────────────────────────── */
+@keyframes kenBurns {
+  0%   { transform: scale(1)    translateX(0)    translateY(0); }
+  33%  { transform: scale(1.06) translateX(-1%)  translateY(-1%); }
+  66%  { transform: scale(1.04) translateX(1%)   translateY(-0.5%); }
+  100% { transform: scale(1)    translateX(0)    translateY(0); }
+}
+.bg-kenburns {
+  animation: kenBurns 18s ease-in-out infinite;
+}
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -231,6 +240,19 @@
   42%  { transform: scale(1.1); }
   70%  { transform: scale(1); }
 }
+@keyframes capsuleDrift {
+  0%   { transform: translate3d(0,0,0) rotate(var(--rot, 0deg)); }
+  50%  { transform: translate3d(var(--drift-x, 20px), var(--drift-y, -24px), 0) rotate(calc(var(--rot, 0deg) + 18deg)); }
+  100% { transform: translate3d(0,0,0) rotate(var(--rot, 0deg)); }
+}
+@keyframes btnShimmer {
+  0%   { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%)  skewX(-20deg); }
+}
+@keyframes borderSweep {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
 
 /* ─── ANIMATION UTILITY CLASSES ──────────────────────────────────── */
 .animate-fade-in      { animation: fadeIn 0.45s ease both; }
@@ -246,6 +268,22 @@
 .animate-pulse-ring-purple { animation: pulseRingPurple 2s cubic-bezier(.455,.03,.515,.955) infinite; }
 .animate-blink        { animation: blink 1.4s ease-in-out infinite; }
 .animate-spin-slow    { animation: spin-slow 8s linear infinite; }
+.animate-capsule      { animation: capsuleDrift var(--dur, 9s) ease-in-out infinite; }
+.animate-border-sweep { background-size: 200% 100%; animation: borderSweep 3.5s linear infinite; }
+
+/* Shimmer-sweep button (pair with .btn-shimmer on a positioned parent) */
+.btn-shimmer { position: relative; overflow: hidden; isolation: isolate; }
+.btn-shimmer::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 45%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+  pointer-events: none;
+  z-index: 1;
+}
+.btn-shimmer:hover::before { animation: btnShimmer 0.9s ease forwards; }
 
 /* stagger delays */
 .delay-75  { animation-delay: 75ms; }

@@ -10,83 +10,44 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Building2, Phone, MapPin, Search, Plus, Globe,
-  Award, Loader2, PhoneCall, PhoneOff, CheckCircle
+  Award, PhoneCall
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const TIER_COLORS: Record<string, string> = {
   Gold:   "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900",
   Silver: "bg-slate-100 dark:bg-slate-900/50 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800",
-  Bronze: "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-900",
+  Bronze: "bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-900",
 };
 
-function OutboundCallButton({ pharmacy }: { pharmacy: any }) {
-  const { toast } = useToast();
-  const [callStatus, setCallStatus] = useState<"idle" | "calling" | "success" | "error">("idle");
-
-  const callMutation = useMutation({
-    mutationFn: async (reason: string) => {
-      const res = await apiRequest("POST", "/api/twilio/outbound", {
-        pharmacyId: pharmacy._id,
-        reason,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Call failed");
-      return data;
-    },
-    onSuccess: (data) => {
-      setCallStatus("success");
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      toast({
-        title: "Call initiated!",
-        description: `MediVoice AI is calling ${pharmacy.name}. Call SID: ${data.callSid?.slice(0, 12)}…`,
-      });
-      setTimeout(() => setCallStatus("idle"), 5000);
-    },
-    onError: (err: any) => {
-      setCallStatus("error");
-      toast({
-        title: "Call failed",
-        description: err.message || "Could not initiate Twilio call. Check if the pharmacy has a valid phone number.",
-        variant: "destructive",
-      });
-      setTimeout(() => setCallStatus("idle"), 4000);
-    },
-  });
-
+function CallPharmacyButton({ pharmacy }: { pharmacy: any }) {
   const hasPhone = !!pharmacy.contact;
 
-  if (callStatus === "success") {
+  if (!hasPhone) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900">
-        <CheckCircle className="h-3.5 w-3.5" /> Call placed
-      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled
+        className="gap-1.5 text-xs rounded-xl font-semibold"
+      >
+        <PhoneCall className="h-3.5 w-3.5" /> No number
+      </Button>
     );
   }
 
+  const telHref = `tel:${pharmacy.contact.replace(/[^+\d]/g, "")}`;
+
   return (
-    <Button
-      size="sm"
-      className={`gap-1.5 text-xs rounded-xl font-semibold transition-all duration-200 shadow-sm ${
-        callStatus === "calling"
-          ? "bg-orange-500 hover:bg-orange-600 text-white"
-          : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-      }`}
-      disabled={!hasPhone || callMutation.isPending}
-      onClick={() => {
-        setCallStatus("calling");
-        callMutation.mutate("stock check and reorder opportunities");
-      }}
-      title={!hasPhone ? "No phone number registered for this pharmacy" : `Call ${pharmacy.name}`}
-      data-testid={`button-call-pharmacy-${pharmacy._id}`}
-    >
-      {callMutation.isPending ? (
-        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Calling…</>
-      ) : (
-        <><PhoneCall className="h-3.5 w-3.5" /> Call AI</>
-      )}
-    </Button>
+    <a href={telHref} data-testid={`link-call-pharmacy-${pharmacy._id}`}>
+      <Button
+        size="sm"
+        className="gap-1.5 text-xs rounded-xl font-semibold transition-all duration-200 shadow-sm bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+        title={`Call ${pharmacy.name} at ${pharmacy.contact}`}
+      >
+        <PhoneCall className="h-3.5 w-3.5" /> Call {pharmacy.contact}
+      </Button>
+    </a>
   );
 }
 
@@ -156,7 +117,7 @@ function PharmacyCard({ pharmacy, index }: { pharmacy: any; index: number }) {
             <p className="text-xs text-muted-foreground">Last order: {pharmacy.last_order_date}</p>
           )}
           <div className="ml-auto">
-            <OutboundCallButton pharmacy={pharmacy} />
+            <CallPharmacyButton pharmacy={pharmacy} />
           </div>
         </div>
       </CardContent>

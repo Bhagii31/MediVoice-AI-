@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import {
   Phone, Package, MessageSquare, FileText, ChevronRight,
-  Activity, Star, Zap, PhoneCall, Clock, Bot, Building2,
-  TrendingUp, AlertCircle, CheckCircle2, Sparkles, ArrowUpRight,
+  Activity, Star, PhoneCall, Clock, Bot, Building2,
+  TrendingUp, AlertCircle, CheckCircle2, ArrowUpRight, Sparkles,
   ShieldCheck, Pill, Wallet, BarChart2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,23 +87,9 @@ function HealthRing({ score }: { score: number }) {
   );
 }
 
-const QUICK_ACTIONS = [
-  { label: "My Orders", href: "/pharmacy/orders", icon: Package, gradient: "from-emerald-500 to-teal-600", desc: "Track your order status", badge: null },
-  { label: "Invoices", href: "/pharmacy/invoices", icon: FileText, gradient: "from-blue-500 to-cyan-500", desc: "View & print invoices", badge: null },
-  { label: "Browse Medicines", href: "/pharmacy/catalogue", icon: Pill, gradient: "from-violet-500 to-purple-600", desc: "Full product catalogue", badge: "New" },
-  { label: "Call History", href: "/pharmacy/conversations", icon: MessageSquare, gradient: "from-orange-500 to-amber-500", desc: "Past AI call transcripts", badge: null },
-];
-
-const TIPS = [
-  { icon: Sparkles, text: "Call MediVoice AI to check live stock and get exclusive offers instantly." },
-  { icon: ShieldCheck, text: "All orders placed through AI calls are tracked and invoiced automatically." },
-  { icon: TrendingUp, text: "Check your catalogue for medicines with active discounts this week." },
-  { icon: Zap, text: "Reorder fast movers before stock runs out — check your invoices for patterns." },
-];
 
 export default function PharmacyDashboard() {
   const { pharmacyName, pharmacyCode } = usePharmacyContext();
-  const [tipIdx, setTipIdx] = useState(0);
   const [healthScore, setHealthScore] = useState(0);
 
   const { data: stats } = useQuery<any>({ queryKey: ["/api/stats"] });
@@ -126,11 +112,6 @@ export default function PharmacyDashboard() {
   const totalSpend = deliveredOrders.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
 
   useEffect(() => {
-    const interval = setInterval(() => setTipIdx(i => (i + 1) % TIPS.length), 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     if (!orders) return;
     const total = orders.length || 1;
     const delivered = deliveredOrders.length;
@@ -139,8 +120,6 @@ export default function PharmacyDashboard() {
     const t = setTimeout(() => setHealthScore(score), 400);
     return () => clearTimeout(t);
   }, [orders, convsData]);
-
-  const TipIcon = TIPS[tipIdx].icon;
 
   return (
     <div className="p-6 space-y-6">
@@ -161,16 +140,6 @@ export default function PharmacyDashboard() {
               <Sparkles className="h-3.5 w-3.5" />
               MediVoice AI — your pharmacy intelligence hub
             </p>
-            <div className="flex items-center gap-2 mt-3 flex-wrap">
-              {twilioStatus?.configured && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-medium">
-                  <Phone className="h-3 w-3" /> AI Hotline Active
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-medium">
-                <CheckCircle2 className="h-3 w-3 text-emerald-300" /> MongoDB Connected
-              </div>
-            </div>
           </div>
           <div className="flex items-center gap-4">
             <HealthRing score={healthScore} />
@@ -335,58 +304,6 @@ export default function PharmacyDashboard() {
         </div>
 
         <div className="space-y-4">
-          <Card className="border-0 shadow-sm animate-slide-right overflow-hidden">
-            <div className="bg-gradient-to-br from-violet-500 to-purple-600 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-white" />
-                <p className="text-sm font-bold text-white">Quick Actions</p>
-              </div>
-              <p className="text-violet-200 text-xs">Jump to any section instantly</p>
-            </div>
-            <CardContent className="p-2 pt-2">
-              {QUICK_ACTIONS.map(({ label, href, icon: Icon, gradient, desc, badge }, i) => (
-                <Link key={href} href={href}>
-                  <div className="row-interactive flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted cursor-pointer group animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className={`h-9 w-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-125 group-hover:rotate-6 transition-all duration-300`}>
-                      <Icon className="h-4 w-4 text-white icon-bounce" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold">{label}</p>
-                        {badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300 font-bold uppercase animate-blink">{badge}</span>}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{desc}</p>
-                    </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-                  </div>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm animate-slide-right delay-100 overflow-hidden">
-            <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-white animate-blink" />
-                <p className="text-sm font-bold text-white">AI Tip</p>
-              </div>
-            </div>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3 animate-fade-in" key={tipIdx}>
-                <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                  <TipIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{TIPS[tipIdx].text}</p>
-              </div>
-              <div className="flex gap-1 mt-3">
-                {TIPS.map((_, i) => (
-                  <div key={i} onClick={() => setTipIdx(i)}
-                    className={`h-1 flex-1 rounded-full cursor-pointer transition-all duration-300 ${i === tipIdx ? "bg-amber-500" : "bg-muted"}`} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           {totalOwed > 0 && (
             <Link href="/pharmacy/invoices">
               <Card className="border-0 shadow-sm animate-slide-right delay-200 hover-elevate cursor-pointer group overflow-hidden">
@@ -434,6 +351,21 @@ export default function PharmacyDashboard() {
           )}
         </div>
       </div>
+
+      {/* ── Floating AI Call Bot button ── bottom-left */}
+      <Link href="/pharmacy/voice">
+        <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+          <div className="relative">
+            <Bot className="h-5 w-5" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white animate-ping" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white" />
+          </div>
+          <div className="leading-tight">
+            <p className="text-xs font-black">AI Call Bot</p>
+            <p className="text-[10px] text-emerald-100">Schedule a call</p>
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }
